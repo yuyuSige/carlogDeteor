@@ -37,7 +37,7 @@
           "line_no": 7
         }
       ],
-      "seconds": 0.003,
+      "seconds": 0.006,
       "manual_minutes_estimate": 25,
       "manual_minutes_note": "estimate"
     },
@@ -75,7 +75,7 @@
           "line_no": 4
         }
       ],
-      "seconds": 0.003,
+      "seconds": 0.005,
       "manual_minutes_estimate": 20,
       "manual_minutes_note": "estimate"
     },
@@ -113,7 +113,7 @@
           "line_no": 9
         }
       ],
-      "seconds": 0.003,
+      "seconds": 0.004,
       "manual_minutes_estimate": 20,
       "manual_minutes_note": "estimate"
     },
@@ -136,7 +136,7 @@
           "line_no": 2
         }
       ],
-      "seconds": 0.003,
+      "seconds": 0.005,
       "manual_minutes_estimate": 15,
       "manual_minutes_note": "estimate"
     },
@@ -182,7 +182,7 @@
           "line_no": 2
         }
       ],
-      "seconds": 0.002,
+      "seconds": 0.003,
       "manual_minutes_estimate": 20,
       "manual_minutes_note": "estimate"
     },
@@ -200,7 +200,7 @@
           "line_no": 1
         }
       ],
-      "seconds": 0.002,
+      "seconds": 0.003,
       "manual_minutes_estimate": 8,
       "manual_minutes_note": "estimate"
     },
@@ -212,7 +212,7 @@
       "pass": true,
       "errors": [],
       "evidence": [],
-      "seconds": 0.002,
+      "seconds": 0.003,
       "manual_minutes_estimate": 5,
       "manual_minutes_note": "estimate"
     }

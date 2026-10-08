@@ -65,14 +65,14 @@ def classify(
                 confidence=float(th.get("unknown_confidence", 0.3)),
                 evidence_ids=[],
                 scores={},
-                reason="Error-level lines exist but there is no stack, context or module evidence.",
+                reason="存在错误级别日志，但没有堆栈、上下文或模块证据。",
             )
         return Classification(
             issue_type="NORMAL",
             confidence=float(th.get("normal_confidence", 0.9)),
             evidence_ids=[],
             scores={},
-            reason="No anomaly matched and no idle-signal / missing-text pattern.",
+            reason="未匹配到异常，也没有信号空闲/文言缺失模式。",
         )
 
     ranked = sorted(scores.items(), key=lambda kv: (-kv[1], PRIORITY.index(kv[0]) if kv[0] in PRIORITY else 99))
@@ -87,7 +87,7 @@ def classify(
                 confidence=float(th.get("unknown_confidence", 0.3)),
                 evidence_ids=[],
                 scores=dict(scores),
-                reason="Error-like lines exist but there is no stack, context or module evidence.",
+                reason="存在类似错误的日志，但没有堆栈、上下文或模块证据。",
             )
 
     if top_score < min_specific and not signal_idle:
@@ -96,7 +96,7 @@ def classify(
             confidence=float(th.get("unknown_confidence", 0.3)),
             evidence_ids=[],
             scores=dict(scores),
-            reason="Anomaly score below threshold; insufficient pattern match.",
+            reason="异常得分低于阈值，模式匹配不足。",
         )
 
     # Normalize confidence into 0..1
@@ -106,5 +106,5 @@ def classify(
         confidence=round(conf, 3),
         evidence_ids=[],
         scores=dict(scores),
-        reason=f"Highest category {top_type} (score={top_score:.2f}).",
+        reason=f"最高分类为 {top_type}（得分={top_score:.2f}）。",
     )

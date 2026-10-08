@@ -24,20 +24,20 @@ _KIND_TO_CATEGORY = {
 }
 
 _WHY = {
-    "first_error": "First ERROR-level line in the window; often the earliest symptom.",
-    "first_exception": "First exception / stack-bearing error.",
-    "fatal": "Fatal exception — process is about to die.",
-    "crash": "Process death or force-finish after a crash.",
-    "binder_failure": "Binder/IPC failure between services.",
-    "service_disconnected": "Service connection dropped.",
-    "state_transition_failure": "State machine rejected or recovered from an illegal transition.",
-    "timeout": "A wait exceeded its deadline.",
-    "communication_failure": "Cross-module communication failed.",
-    "anr": "Application Not Responding.",
-    "key_warning": "Warning that sits on the causal path.",
-    "signal_idle": "Focus signal stayed at idle (0); Profile maps this to NO_TEXT.",
-    "text_idle": "DrivingTextManager reported an empty queue / no current display.",
-    "text_trigger": "DrivingTextManager actually queued or showed a prompt.",
+    "first_error": "时间窗内第一条 ERROR，通常是最早症状。",
+    "first_exception": "第一条带堆栈的异常。",
+    "fatal": "Fatal 异常，进程即将退出。",
+    "crash": "崩溃后的进程死亡或强制结束界面。",
+    "binder_failure": "服务之间的 Binder/IPC 失败。",
+    "service_disconnected": "远端服务连接断开。",
+    "state_transition_failure": "状态机拒绝或从非法转换中恢复。",
+    "timeout": "等待超过截止时间。",
+    "communication_failure": "跨模块通信失败。",
+    "anr": "应用无响应（ANR）。",
+    "key_warning": "位于因果链上的关键告警。",
+    "signal_idle": "焦点信号保持空闲值 0；Profile 将其映射为 NO_TEXT。",
+    "text_idle": "DrivingTextManager 报告队列为空且无当前显示。",
+    "text_trigger": "DrivingTextManager 实际入队或显示了文言。",
 }
 
 
@@ -57,7 +57,7 @@ def _add(
             category=category,
             event_id=ev.id if ev else None,
             text=text,
-            why_it_matters=_WHY.get(category, "Relevant to the diagnosis."),
+            why_it_matters=_WHY.get(category, "与本次诊断相关。"),
             line_no=ev.line_no if ev else None,
             timestamp=ev.timestamp if ev else None,
             repeat_count=repeats,
@@ -130,8 +130,9 @@ def extract_evidence(
                 ev,
                 "signal_idle" if period.value in ("0", "0.0") else "key_warning",
                 (
-                    f"{period.struct}.{period.field}={period.value} from {period.start_ts} to "
-                    f"{period.end_ts} ({period.samples} samples, lines {period.first_line}-{period.last_line})"
+                    f"{period.struct}.{period.field}={period.value}，"
+                    f"{period.start_ts} 至 {period.end_ts}"
+                    f"（{period.samples} 次采样，第 {period.first_line}-{period.last_line} 行）"
                 ),
             )
         if signal_summary.text_manager_idle_count:
@@ -143,8 +144,8 @@ def extract_evidence(
                 out,
                 idle_ev,
                 "text_idle",
-                f"DrivingTextManager idle x{signal_summary.text_manager_idle_count} "
-                f"(empty queue, waiting for a new prompt).",
+                f"DrivingTextManager 空闲 ×{signal_summary.text_manager_idle_count}"
+                f"（队列为空，等待新文言触发）。",
                 repeats=signal_summary.text_manager_idle_count,
             )
         if signal_summary.text_manager_trigger_count:
@@ -160,7 +161,7 @@ def extract_evidence(
                 out,
                 trig,
                 "text_trigger",
-                f"DrivingTextManager trigger/display x{signal_summary.text_manager_trigger_count}.",
+                f"DrivingTextManager 入队/显示文言 ×{signal_summary.text_manager_trigger_count}。",
                 repeats=signal_summary.text_manager_trigger_count,
             )
 

@@ -49,8 +49,7 @@ def _apply_question(classification: Classification, question: str | None, has_si
         return classification
     classification.issue_type = "SIGNAL_NOT_TRIGGERED"
     classification.reason = (
-        classification.reason + " User question points to a missing driving-text prompt; "
-        "signal/text correlation is the primary hypothesis."
+        classification.reason + " 用户问题指向文言未弹出；以信号与文言关联为主要假设。"
     )
     classification.confidence = max(classification.confidence, 0.7)
     return classification
@@ -58,24 +57,24 @@ def _apply_question(classification: Classification, question: str | None, has_si
 
 def _summary(classification: Classification, evidence, root_causes) -> str:
     if classification.issue_type == "NORMAL":
-        return "Log window looks nominal: no crash, binder, state, or communication failure; no missing-text pattern."
+        return "该时间窗日志正常：无崩溃、Binder、状态机或通信失败，也无文言缺失模式。"
     if classification.issue_type == "UNKNOWN":
-        return "An error-like symptom is present but evidence is insufficient for a specific root cause."
-    ev = ", ".join(e.id for e in evidence[:5]) or "none"
-    rc = root_causes[0].title if root_causes else "n/a"
-    return f"{classification.issue_type} (confidence {classification.confidence}). Key evidence: {ev}. Candidate: {rc}"
+        return "存在类似错误的症状，但证据不足以给出具体根因。"
+    ev = "、".join(e.id for e in evidence[:5]) or "无"
+    rc = root_causes[0].title if root_causes else "无"
+    return f"{classification.issue_type}（置信度 {classification.confidence}）。关键证据：{ev}。候选：{rc}"
 
 
 def _unknowns(classification: Classification, evidence, code_hits, source_dir) -> list[str]:
     out = []
     if classification.issue_type == "UNKNOWN":
-        out.append("Insufficient evidence for a specific root cause (no stack / module / signal context).")
+        out.append("证据不足，无法给出具体根因（无堆栈 / 模块 / 信号上下文）。")
     if not source_dir:
-        out.append("No --source directory: Related Code is empty (optional).")
+        out.append("未提供 --source 目录：相关代码为空（可选）。")
     if source_dir and not code_hits:
-        out.append("Source directory was given but no stack frame or tag mapped to a file.")
+        out.append("已提供源码目录，但堆栈帧或 TAG 未能映射到文件。")
     if not any(e.category == "first_exception" for e in evidence) and classification.issue_type in ("CRASH", "EXCEPTION"):
-        out.append("Exception class present but app frame may be missing.")
+        out.append("存在异常类名，但可能缺少应用侧堆栈帧。")
     return out
 
 
@@ -158,7 +157,7 @@ def run_analysis(
         recs.insert(
             0,
             Recommendation(
-                text="Treat signal=0 as expected NO_TEXT: do not look for a DrivingTextManager bug unless a non-zero value was published.",
+                text="信号为 0 时映射为 NO_TEXT 属于预期：除非发布过非 0 值，否则不要先查 DrivingTextManager 缺陷。",
                 evidence_ids=[e.id for e in evidence if e.category in ("signal_idle", "text_idle")],
                 priority=1,
             )

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from adaslog.models import CausalLink, ContextWindow, Evidence, LogEvent, TimelineEntry
+from adaslog.report.labels import category as category_zh
 from adaslog.utils.timeparse import parse_timestamp
 
 
@@ -55,7 +56,7 @@ def build_context(
                 timestamp=evd.timestamp or (ev.timestamp if ev else None),
                 line_no=evd.line_no or (ev.line_no if ev else 0),
                 event_id=evd.event_id if evd.event_id is not None else -1,
-                label=f"{evd.category}: {(evd.text[:120])}",
+                label=f"{category_zh(evd.category)}：{(evd.text[:120])}",
                 evidence_id=evd.id,
             )
         )

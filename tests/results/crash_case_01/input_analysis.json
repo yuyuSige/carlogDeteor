@@ -1,7 +1,7 @@
 {
   "issue_type": "CRASH",
   "severity": "CRITICAL",
-  "summary": "CRASH (confidence 0.97). Key evidence: E1, E2, E3, E4, E5. Candidate: Process crashed (fatal exception / native abort).",
+  "summary": "CRASH（置信度 0.97）。关键证据：E1、E2、E3、E4、E5。候选：进程崩溃（Fatal 异常 / native abort）。",
   "classification": {
     "issue_type": "CRASH",
     "confidence": 0.97,
@@ -16,7 +16,7 @@
       "CRASH": 11.0,
       "EXCEPTION": 3.5
     },
-    "reason": "Highest category CRASH (score=11.00)."
+    "reason": "最高分类为 CRASH（得分=11.00）。"
   },
   "key_evidence": [
     {
@@ -25,7 +25,7 @@
       "category": "first_error",
       "event_id": 1,
       "text": "[L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
-      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "why_it_matters": "时间窗内第一条 ERROR，通常是最早症状。",
       "line_no": 2,
       "timestamp": "08-11 16:09:14.790",
       "repeat_count": 1,
@@ -39,7 +39,7 @@
       "category": "fatal",
       "event_id": 1,
       "text": "[FATAL_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
-      "why_it_matters": "Fatal exception — process is about to die.",
+      "why_it_matters": "Fatal 异常，进程即将退出。",
       "line_no": 2,
       "timestamp": "08-11 16:09:14.790",
       "repeat_count": 1,
@@ -53,7 +53,7 @@
       "category": "first_exception",
       "event_id": 1,
       "text": "[JAVA_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
-      "why_it_matters": "First exception / stack-bearing error.",
+      "why_it_matters": "第一条带堆栈的异常。",
       "line_no": 2,
       "timestamp": "08-11 16:09:14.790",
       "repeat_count": 1,
@@ -67,7 +67,7 @@
       "category": "crash",
       "event_id": 2,
       "text": "[FORCE_FINISH] [L8] 08-11 16:09:14.797 W/ActivityTaskManager(456):   Force finishing activity com.chery.ivi.adas/.MainActivity",
-      "why_it_matters": "Process death or force-finish after a crash.",
+      "why_it_matters": "崩溃后的进程死亡或强制结束界面。",
       "line_no": 8,
       "timestamp": "08-11 16:09:14.797",
       "repeat_count": 1,
@@ -81,7 +81,7 @@
       "category": "crash",
       "event_id": 3,
       "text": "[FORCE_FINISH] [L9] 08-11 16:09:14.854 I/ActivityManager(456): Process com.chery.ivi.adas (pid 4577) has died: fg  TOP",
-      "why_it_matters": "Process death or force-finish after a crash.",
+      "why_it_matters": "崩溃后的进程死亡或强制结束界面。",
       "line_no": 9,
       "timestamp": "08-11 16:09:14.854",
       "repeat_count": 1,
@@ -95,35 +95,35 @@
       "timestamp": "08-11 16:09:14.790",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_error: [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
+      "label": "首条错误：[L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
       "evidence_id": "E1"
     },
     {
       "timestamp": "08-11 16:09:14.790",
       "line_no": 2,
       "event_id": 1,
-      "label": "fatal: [FATAL_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
+      "label": "Fatal：[FATAL_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
       "evidence_id": "E2"
     },
     {
       "timestamp": "08-11 16:09:14.790",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_exception: [JAVA_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
+      "label": "首条异常：[JAVA_EXCEPTION] [L2] 08-11 16:09:14.790 E/AndroidRuntime(4577): FATAL EXCEPTION: main",
       "evidence_id": "E3"
     },
     {
       "timestamp": "08-11 16:09:14.797",
       "line_no": 8,
       "event_id": 2,
-      "label": "crash: [FORCE_FINISH] [L8] 08-11 16:09:14.797 W/ActivityTaskManager(456):   Force finishing activity com.chery.ivi.adas/.MainAc",
+      "label": "崩溃：[FORCE_FINISH] [L8] 08-11 16:09:14.797 W/ActivityTaskManager(456):   Force finishing activity com.chery.ivi.adas/.MainAc",
       "evidence_id": "E4"
     },
     {
       "timestamp": "08-11 16:09:14.854",
       "line_no": 9,
       "event_id": 3,
-      "label": "crash: [FORCE_FINISH] [L9] 08-11 16:09:14.854 I/ActivityManager(456): Process com.chery.ivi.adas (pid 4577) has died: fg  TOP",
+      "label": "崩溃：[FORCE_FINISH] [L9] 08-11 16:09:14.854 I/ActivityManager(456): Process com.chery.ivi.adas (pid 4577) has died: fg  TOP",
       "evidence_id": "E5"
     }
   ],
@@ -207,7 +207,7 @@
   ],
   "root_causes": [
     {
-      "title": "Process crashed (fatal exception / native abort).",
+      "title": "进程崩溃（Fatal 异常 / native abort）。",
       "status": "CANDIDATE",
       "confidence": "HIGH",
       "evidence_ids": [
@@ -217,9 +217,9 @@
         "E4",
         "E5"
       ],
-      "reasoning": "Highest category CRASH (score=11.00).",
+      "reasoning": "最高分类为 CRASH（得分=11.00）。",
       "need_verification": [
-        "Open the first app frame in --source and check the null / illegal state."
+        "用 --source 打开第一个应用堆栈帧，检查空指针或非法状态。"
       ],
       "reason": null,
       "source": "rule"
@@ -236,7 +236,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Open the first app frame in --source and check the null / illegal state.",
+      "text": "用 --source 打开第一个应用堆栈帧，检查空指针或非法状态。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -248,7 +248,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

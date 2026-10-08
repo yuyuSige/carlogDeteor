@@ -1,7 +1,7 @@
 {
   "issue_type": "UNKNOWN",
   "severity": "LOW",
-  "summary": "An error-like symptom is present but evidence is insufficient for a specific root cause.",
+  "summary": "存在类似错误的症状，但证据不足以给出具体根因。",
   "classification": {
     "issue_type": "UNKNOWN",
     "confidence": 0.3,
@@ -9,7 +9,7 @@
       "E1"
     ],
     "scores": {},
-    "reason": "Error-level lines exist but there is no stack, context or module evidence."
+    "reason": "存在错误级别日志，但没有堆栈、上下文或模块证据。"
   },
   "key_evidence": [
     {
@@ -18,7 +18,7 @@
       "category": "first_error",
       "event_id": 0,
       "text": "[L1] E/: something happened",
-      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "why_it_matters": "时间窗内第一条 ERROR，通常是最早症状。",
       "line_no": 1,
       "timestamp": null,
       "repeat_count": 1,
@@ -32,7 +32,7 @@
       "timestamp": null,
       "line_no": 1,
       "event_id": 0,
-      "label": "first_error: [L1] E/: something happened",
+      "label": "首条错误：[L1] E/: something happened",
       "evidence_id": "E1"
     }
   ],
@@ -53,11 +53,11 @@
       "evidence_ids": [
         "E1"
       ],
-      "reasoning": "Insufficient evidence.",
+      "reasoning": "证据不足。",
       "need_verification": [
-        "Provide a longer window, a stack trace, or the module that reproduced the symptom."
+        "请提供更长的时间窗、异常堆栈，或复现该症状的模块日志。"
       ],
-      "reason": "Insufficient evidence.",
+      "reason": "证据不足。",
       "source": "rule"
     }
   ],
@@ -67,7 +67,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Provide a longer window, a stack trace, or the module that reproduced the symptom.",
+      "text": "请提供更长的时间窗、异常堆栈，或复现该症状的模块日志。",
       "evidence_ids": [
         "E1"
       ],
@@ -75,8 +75,8 @@
     }
   ],
   "unknowns": [
-    "Insufficient evidence for a specific root cause (no stack / module / signal context).",
-    "No --source directory: Related Code is empty (optional)."
+    "证据不足，无法给出具体根因（无堆栈 / 模块 / 信号上下文）。",
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

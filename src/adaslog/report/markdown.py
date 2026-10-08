@@ -1,109 +1,113 @@
 from __future__ import annotations
 
 from adaslog.models import AnalysisReport
+from adaslog.report import labels as L
 
 
 def render_markdown(r: AnalysisReport) -> str:
     lines = [
-        "# ADAS Log Analysis Report",
+        "# ADAS 日志分析报告",
         "",
-        f"- **Issue Type:** {r.issue_type}",
-        f"- **Severity:** {r.severity}",
-        f"- **Confidence:** {r.confidence} (score={r.classification.confidence})",
-        f"- **LLM:** {r.meta.get('llm_status', 'n/a')} / {r.meta.get('llm_provider', 'rule')}",
+        f"- **问题类型：** {L.issue(r.issue_type)}",
+        f"- **严重程度：** {L.severity(r.severity)}",
+        f"- **置信度：** {L.confidence(r.confidence)}（得分={r.classification.confidence}）",
+        f"- **推理引擎：** {r.meta.get('llm_status', 'n/a')} / {r.meta.get('llm_provider', 'rule')}",
         "",
-        "## 1. Issue Type",
+        "## 1. 问题类型",
         "",
-        r.issue_type,
+        L.issue(r.issue_type),
         "",
-        f"Reason: {r.classification.reason}",
+        f"判定说明：{r.classification.reason}",
         "",
-        "## 2. Severity",
+        "## 2. 严重程度",
         "",
-        r.severity,
+        L.severity(r.severity),
         "",
-        "## 3. Summary",
+        "## 3. 摘要",
         "",
         r.summary,
         "",
-        "## 4. Key Evidence",
+        "## 4. 关键证据",
         "",
     ]
     if not r.key_evidence:
-        lines.append("_None._")
+        lines.append("_无。_")
     for e in r.key_evidence:
-        loc = f"L{e.line_no}" if e.line_no else ""
+        loc = f"第{e.line_no}行" if e.line_no else ""
         ts = e.timestamp or ""
-        extra = f" x{e.repeat_count}" if e.repeat_count > 1 else ""
-        lines.append(f"- **{e.id}** [{e.category}] {ts} {loc}{extra}")
+        extra = f" ×{e.repeat_count}" if e.repeat_count > 1 else ""
+        lines.append(f"- **{e.id}** [{L.category(e.category)}] {ts} {loc}{extra}")
         lines.append(f"  - {e.text}")
-        lines.append(f"  - Why: {e.why_it_matters}")
-    lines += ["", "## 5. Event Timeline", ""]
+        lines.append(f"  - 为何关键：{e.why_it_matters}")
+    lines += ["", "## 5. 事件时间线", ""]
     if not r.timeline:
-        lines.append("_None._")
+        lines.append("_无。_")
     for t in r.timeline:
-        lines.append(f"- {t.timestamp or ''} L{t.line_no} ({t.evidence_id}): {t.label}")
+        lines.append(f"- {t.timestamp or ''} 第{t.line_no}行（{t.evidence_id}）：{t.label}")
     if r.causal_chain:
-        lines += ["", "Causal chain:"]
+        lines += ["", "因果链："]
         for c in r.causal_chain:
-            lines.append(f"- {c.from_evidence} --{c.relation}--> {c.to_evidence}")
-    lines += ["", "## 6. Possible Root Causes", ""]
+            lines.append(f"- {c.from_evidence} --{L.relation(c.relation)}--> {c.to_evidence}")
+    lines += ["", "## 6. 可能根因", ""]
     if not r.root_causes:
-        lines.append("No root-cause section (NORMAL or nothing to hypothesise).")
+        lines.append("无根因段落（日志为正常，或无需假设）。")
     for rc in r.root_causes:
-        lines.append(f"### {rc.status}: {rc.title}")
+        lines.append(f"### {L.status(rc.status)}：{rc.title}")
         lines.append("")
-        lines.append(f"- Confidence: {rc.confidence}")
-        lines.append(f"- Evidence: {', '.join(rc.evidence_ids) or '(none)'}")
-        lines.append(f"- Reasoning: {rc.reasoning}")
+        lines.append(f"- 置信度：{L.confidence(rc.confidence)}")
+        lines.append(f"- 证据：{', '.join(rc.evidence_ids) or '（无）'}")
+        lines.append(f"- 推理：{rc.reasoning}")
         if rc.reason:
-            lines.append(f"- Reason: {rc.reason}")
+            lines.append(f"- 原因：{rc.reason}")
         if rc.need_verification:
-            lines.append("- Need verification:")
+            lines.append("- 待核实：")
             for v in rc.need_verification:
                 lines.append(f"  - {v}")
         lines.append("")
-    lines += ["## 7. Confidence", "", r.confidence, ""]
-    lines += ["## 8. Related Modules", ""]
-    lines.append(", ".join(r.related_modules) or "_unknown_")
+    lines += ["## 7. 置信度", "", L.confidence(r.confidence), ""]
+    lines += ["## 8. 相关模块", ""]
+    lines.append(", ".join(r.related_modules) or "_未知_")
     if r.related_processes:
-        lines += ["", "Processes: " + ", ".join(r.related_processes)]
-    lines += ["", "## 9. Related Code", ""]
+        lines += ["", "进程：" + ", ".join(r.related_processes)]
+    lines += ["", "## 9. 相关代码", ""]
     if not r.related_code:
-        lines.append("_No --source provided, or no frame/tag mapped to a file. Planned/optional._")
+        lines.append("_未提供 --source，或堆栈/TAG 未能映射到源文件（可选）。_")
     for h in r.related_code:
-        lines.append(f"### `{h.file}`:{h.line or '?'} `{h.symbol}` ({h.how_found})")
+        lines.append(f"### `{h.file}`:{h.line or '?'} `{h.symbol}`（{L.how_found(h.how_found)}）")
         if h.candidates:
-            lines.append(f"Other flavor/source-set candidates: {', '.join(h.candidates[:4])}")
+            lines.append(f"其他 flavor/源集候选：{', '.join(h.candidates[:4])}")
         if h.risk_patterns:
-            lines.append(f"Risk patterns: {', '.join(h.risk_patterns)}")
+            lines.append(f"风险模式：{', '.join(h.risk_patterns)}")
         lines.append("```")
         lines.append(h.snippet)
         lines.append("```")
-    lines += ["", "## 10. Recommended Investigation", ""]
+    lines += ["", "## 10. 排查建议", ""]
     if not r.recommendations:
-        lines.append("_None._")
+        lines.append("_无。_")
     for rec in r.recommendations:
-        ev = f" (evidence {', '.join(rec.evidence_ids)})" if rec.evidence_ids else ""
+        ev = f"（证据 {', '.join(rec.evidence_ids)}）" if rec.evidence_ids else ""
         lines.append(f"- {rec.text}{ev}")
-    lines += ["", "## 11. Unknown / Missing Information", ""]
+    lines += ["", "## 11. 未知 / 缺失信息", ""]
     if not r.unknowns:
-        lines.append("_None recorded._")
+        lines.append("_无。_")
     for u in r.unknowns:
         lines.append(f"- {u}")
     if r.signal_summary:
         s = r.signal_summary
-        lines += ["", "## Signal summary", ""]
-        lines.append(f"Window: {s.window or 'n/a'}")
-        lines.append(f"Structs sampled: {s.structs}")
+        lines += ["", "## 信号摘要", ""]
+        lines.append(f"时间窗：{s.window or '无'}")
+        lines.append(f"结构体采样：{s.structs}")
         lines.append(
-            f"DrivingTextManager idle={s.text_manager_idle_count} trigger={s.text_manager_trigger_count}"
+            f"DrivingTextManager 空闲={s.text_manager_idle_count} 触发={s.text_manager_trigger_count}"
         )
         if s.focus:
-            lines.append("Focus periods:")
+            lines.append("焦点信号时段：")
             for p in s.focus:
                 lines.append(
-                    f"- {p.struct}.{p.field}={p.value} {p.start_ts}..{p.end_ts} n={p.samples} L{p.first_line}-{p.last_line}"
+                    f"- {p.struct}.{p.field}={p.value} {p.start_ts}～{p.end_ts} 采样{p.samples}次 第{p.first_line}-{p.last_line}行"
                 )
-    lines += ["", "---", f"meta: `{r.meta}`"]
+    q = r.meta.get("question")
+    if q:
+        lines += ["", f"分析问题：{q}"]
+    lines += ["", "---", f"元数据：`{r.meta}`"]
     return "\n".join(lines) + "\n"

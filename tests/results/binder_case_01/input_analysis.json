@@ -1,7 +1,7 @@
 {
   "issue_type": "BINDER_IPC",
   "severity": "HIGH",
-  "summary": "BINDER_IPC (confidence 0.97). Key evidence: E1, E2, E3, E4, E5. Candidate: Binder/IPC transaction failed or the remote service died.",
+  "summary": "BINDER_IPC（置信度 0.97）。关键证据：E1、E2、E3、E4、E5。候选：Binder/IPC 事务失败或远端服务已死亡。",
   "classification": {
     "issue_type": "BINDER_IPC",
     "confidence": 0.97,
@@ -17,7 +17,7 @@
       "BINDER_IPC": 7.7250000000000005,
       "MODULE_COMMUNICATION": 3.0
     },
-    "reason": "Highest category BINDER_IPC (score=7.73)."
+    "reason": "最高分类为 BINDER_IPC（得分=7.73）。"
   },
   "key_evidence": [
     {
@@ -26,7 +26,7 @@
       "category": "first_error",
       "event_id": 2,
       "text": "[L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
-      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "why_it_matters": "时间窗内第一条 ERROR，通常是最早症状。",
       "line_no": 3,
       "timestamp": "08-11 16:10:01.240",
       "repeat_count": 1,
@@ -40,7 +40,7 @@
       "category": "binder_failure",
       "event_id": 2,
       "text": "[BINDER_DEAD_OBJECT] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
-      "why_it_matters": "Binder/IPC failure between services.",
+      "why_it_matters": "服务之间的 Binder/IPC 失败。",
       "line_no": 3,
       "timestamp": "08-11 16:10:01.240",
       "repeat_count": 2,
@@ -55,7 +55,7 @@
       "category": "service_disconnected",
       "event_id": 3,
       "text": "[SERVICE_DISCONNECTED] [L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
-      "why_it_matters": "Service connection dropped.",
+      "why_it_matters": "远端服务连接断开。",
       "line_no": 6,
       "timestamp": "08-11 16:10:01.251",
       "repeat_count": 1,
@@ -69,7 +69,7 @@
       "category": "first_exception",
       "event_id": 2,
       "text": "[JAVA_EXCEPTION] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
-      "why_it_matters": "First exception / stack-bearing error.",
+      "why_it_matters": "第一条带堆栈的异常。",
       "line_no": 3,
       "timestamp": "08-11 16:10:01.240",
       "repeat_count": 2,
@@ -84,7 +84,7 @@
       "category": "communication_failure",
       "event_id": 4,
       "text": "[BUS_FAILURE] [L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException",
-      "why_it_matters": "Cross-module communication failed.",
+      "why_it_matters": "跨模块通信失败。",
       "line_no": 7,
       "timestamp": "08-11 16:10:01.260",
       "repeat_count": 1,
@@ -98,35 +98,35 @@
       "timestamp": "08-11 16:10:01.240",
       "line_no": 3,
       "event_id": 2,
-      "label": "first_error: [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
+      "label": "首条错误：[L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
       "evidence_id": "E1"
     },
     {
       "timestamp": "08-11 16:10:01.240",
       "line_no": 3,
       "event_id": 2,
-      "label": "binder_failure: [BINDER_DEAD_OBJECT] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "label": "Binder 失败：[BINDER_DEAD_OBJECT] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
       "evidence_id": "E2"
     },
     {
       "timestamp": "08-11 16:10:01.240",
       "line_no": 3,
       "event_id": 2,
-      "label": "first_exception: [JAVA_EXCEPTION] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "label": "首条异常：[JAVA_EXCEPTION] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
       "evidence_id": "E4"
     },
     {
       "timestamp": "08-11 16:10:01.251",
       "line_no": 6,
       "event_id": 3,
-      "label": "service_disconnected: [SERVICE_DISCONNECTED] [L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+      "label": "服务断开：[SERVICE_DISCONNECTED] [L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
       "evidence_id": "E3"
     },
     {
       "timestamp": "08-11 16:10:01.260",
       "line_no": 7,
       "event_id": 4,
-      "label": "communication_failure: [BUS_FAILURE] [L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException",
+      "label": "通信失败：[BUS_FAILURE] [L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException",
       "evidence_id": "E5"
     }
   ],
@@ -215,7 +215,7 @@
   ],
   "root_causes": [
     {
-      "title": "Binder/IPC transaction failed or the remote service died.",
+      "title": "Binder/IPC 事务失败或远端服务已死亡。",
       "status": "CANDIDATE",
       "confidence": "HIGH",
       "evidence_ids": [
@@ -225,9 +225,9 @@
         "E4",
         "E5"
       ],
-      "reasoning": "Highest category BINDER_IPC (score=7.73).",
+      "reasoning": "最高分类为 BINDER_IPC（得分=7.73）。",
       "need_verification": [
-        "Check the remote service process death and the AIDL interface that failed."
+        "检查远端服务进程是否死亡，以及失败的 AIDL 接口。"
       ],
       "reason": null,
       "source": "rule"
@@ -241,7 +241,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Check the remote service process death and the AIDL interface that failed.",
+      "text": "检查远端服务进程是否死亡，以及失败的 AIDL 接口。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -253,7 +253,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

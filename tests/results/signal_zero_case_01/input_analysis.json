@@ -1,7 +1,7 @@
 {
   "issue_type": "SIGNAL_NOT_TRIGGERED",
   "severity": "MEDIUM",
-  "summary": "SIGNAL_NOT_TRIGGERED (confidence 0.783). Key evidence: E1, E2, E3. Candidate: Focus signal stayed at 0 so the corresponding driving-text prompt was not queued (Profile maps idle/0 to NO_TEXT).",
+  "summary": "SIGNAL_NOT_TRIGGERED（置信度 0.783）。关键证据：E1、E2、E3。候选：焦点信号保持为 0，对应驾驶文言未入队（Profile 将空闲/0 映射为 NO_TEXT）。",
   "classification": {
     "issue_type": "SIGNAL_NOT_TRIGGERED",
     "confidence": 0.783,
@@ -13,7 +13,7 @@
     "scores": {
       "SIGNAL_NOT_TRIGGERED": 4.0
     },
-    "reason": "Highest category SIGNAL_NOT_TRIGGERED (score=4.00). User question points to a missing driving-text prompt; signal/text correlation is the primary hypothesis."
+    "reason": "最高分类为 SIGNAL_NOT_TRIGGERED（得分=4.00）。 用户问题指向文言未弹出；以信号与文言关联为主要假设。"
   },
   "key_evidence": [
     {
@@ -21,8 +21,8 @@
       "label": "EVIDENCE",
       "category": "signal_idle",
       "event_id": 0,
-      "text": "AdasActiveSafetyFcnInfo.FcwAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
-      "why_it_matters": "Focus signal stayed at idle (0); Profile maps this to NO_TEXT.",
+      "text": "AdasActiveSafetyFcnInfo.FcwAcitveSt=0，08-11 16:11:20.100 至 08-11 16:11:22.100（3 次采样，第 1-5 行）",
+      "why_it_matters": "焦点信号保持空闲值 0；Profile 将其映射为 NO_TEXT。",
       "line_no": 1,
       "timestamp": "08-11 16:11:20.100",
       "repeat_count": 1,
@@ -35,8 +35,8 @@
       "label": "EVIDENCE",
       "category": "signal_idle",
       "event_id": 0,
-      "text": "AdasActiveSafetyFcnInfo.AebAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
-      "why_it_matters": "Focus signal stayed at idle (0); Profile maps this to NO_TEXT.",
+      "text": "AdasActiveSafetyFcnInfo.AebAcitveSt=0，08-11 16:11:20.100 至 08-11 16:11:22.100（3 次采样，第 1-5 行）",
+      "why_it_matters": "焦点信号保持空闲值 0；Profile 将其映射为 NO_TEXT。",
       "line_no": 1,
       "timestamp": "08-11 16:11:20.100",
       "repeat_count": 1,
@@ -49,8 +49,8 @@
       "label": "EVIDENCE",
       "category": "text_idle",
       "event_id": 3,
-      "text": "DrivingTextManager idle x2 (empty queue, waiting for a new prompt).",
-      "why_it_matters": "DrivingTextManager reported an empty queue / no current display.",
+      "text": "DrivingTextManager 空闲 ×2（队列为空，等待新文言触发）。",
+      "why_it_matters": "DrivingTextManager 报告队列为空且无当前显示。",
       "line_no": 4,
       "timestamp": "08-11 16:11:21.011",
       "repeat_count": 2,
@@ -64,21 +64,21 @@
       "timestamp": "08-11 16:11:20.100",
       "line_no": 1,
       "event_id": 0,
-      "label": "signal_idle: AdasActiveSafetyFcnInfo.FcwAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "label": "信号空闲(0)：AdasActiveSafetyFcnInfo.FcwAcitveSt=0，08-11 16:11:20.100 至 08-11 16:11:22.100（3 次采样，第 1-5 行）",
       "evidence_id": "E1"
     },
     {
       "timestamp": "08-11 16:11:20.100",
       "line_no": 1,
       "event_id": 0,
-      "label": "signal_idle: AdasActiveSafetyFcnInfo.AebAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "label": "信号空闲(0)：AdasActiveSafetyFcnInfo.AebAcitveSt=0，08-11 16:11:20.100 至 08-11 16:11:22.100（3 次采样，第 1-5 行）",
       "evidence_id": "E2"
     },
     {
       "timestamp": "08-11 16:11:21.011",
       "line_no": 4,
       "event_id": 3,
-      "label": "text_idle: DrivingTextManager idle x2 (empty queue, waiting for a new prompt).",
+      "label": "文言未触发：DrivingTextManager 空闲 ×2（队列为空，等待新文言触发）。",
       "evidence_id": "E3"
     }
   ],
@@ -133,7 +133,7 @@
   ],
   "root_causes": [
     {
-      "title": "Focus signal stayed at 0 so the corresponding driving-text prompt was not queued (Profile maps idle/0 to NO_TEXT).",
+      "title": "焦点信号保持为 0，对应驾驶文言未入队（Profile 将空闲/0 映射为 NO_TEXT）。",
       "status": "CANDIDATE",
       "confidence": "HIGH",
       "evidence_ids": [
@@ -141,10 +141,10 @@
         "E2",
         "E3"
       ],
-      "reasoning": "E02 driving_text_tip handlers only call addTextToQueue when Profile.map*(value) returns a text id. Value 0 maps to NO_TEXT. Observed idle fields: AdasActiveSafetyFcnInfo.FcwAcitveSt=0, AdasActiveSafetyFcnInfo.AebAcitveSt=0. DrivingTextManager trigger count=0, idle count=2.",
+      "reasoning": "E02 driving_text_tip 的 Handler 仅在 Profile.map*(value) 返回文言 ID 时调用 addTextToQueue。值为 0 时映射为 NO_TEXT。观测到的空闲字段：AdasActiveSafetyFcnInfo.FcwAcitveSt=0、AdasActiveSafetyFcnInfo.AebAcitveSt=0。DrivingTextManager 触发次数=0，空闲次数=2。",
       "need_verification": [
-        "Confirm the expected non-zero value for the focus signal in that time window.",
-        "If the signal should have been non-zero, inspect VDS / SOME-IP publisher (not the text manager)."
+        "确认该时间窗内焦点信号是否本应出现非 0 值。",
+        "若信号本应非 0，请排查 VDS / SOME-IP 发布端，而不是文言管理器。"
       ],
       "reason": null,
       "source": "rule"
@@ -159,7 +159,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Treat signal=0 as expected NO_TEXT: do not look for a DrivingTextManager bug unless a non-zero value was published.",
+      "text": "信号为 0 时映射为 NO_TEXT 属于预期：除非发布过非 0 值，否则不要先查 DrivingTextManager 缺陷。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -168,7 +168,7 @@
       "priority": 1
     },
     {
-      "text": "Confirm the expected non-zero value for the focus signal in that time window.",
+      "text": "确认该时间窗内焦点信号是否本应出现非 0 值。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -177,7 +177,7 @@
       "priority": 2
     },
     {
-      "text": "If the signal should have been non-zero, inspect VDS / SOME-IP publisher (not the text manager).",
+      "text": "若信号本应非 0，请排查 VDS / SOME-IP 发布端，而不是文言管理器。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -187,7 +187,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {

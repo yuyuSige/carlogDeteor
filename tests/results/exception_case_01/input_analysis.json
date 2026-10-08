@@ -1,7 +1,7 @@
 {
   "issue_type": "EXCEPTION",
   "severity": "HIGH",
-  "summary": "EXCEPTION (confidence 0.742). Key evidence: E1, E2. Candidate: A handled or logged exception occurred on the diagnosis path.",
+  "summary": "EXCEPTION（置信度 0.742）。关键证据：E1、E2。候选：诊断路径上出现已捕获或已打印的异常。",
   "classification": {
     "issue_type": "EXCEPTION",
     "confidence": 0.742,
@@ -12,7 +12,7 @@
     "scores": {
       "EXCEPTION": 3.5
     },
-    "reason": "Highest category EXCEPTION (score=3.50)."
+    "reason": "最高分类为 EXCEPTION（得分=3.50）。"
   },
   "key_evidence": [
     {
@@ -21,7 +21,7 @@
       "category": "first_exception",
       "event_id": 1,
       "text": "java.lang.IllegalStateException: java.lang.IllegalStateException: kanzi view not attached",
-      "why_it_matters": "First exception / stack-bearing error.",
+      "why_it_matters": "第一条带堆栈的异常。",
       "line_no": 2,
       "timestamp": "08-11 16:08:10.040",
       "repeat_count": 1,
@@ -35,7 +35,7 @@
       "category": "first_exception",
       "event_id": 1,
       "text": "[JAVA_EXCEPTION] [L2] 08-11 16:08:10.040 W/AdasKanZiManager(5636): java.lang.IllegalStateException: kanzi view not attached",
-      "why_it_matters": "First exception / stack-bearing error.",
+      "why_it_matters": "第一条带堆栈的异常。",
       "line_no": 2,
       "timestamp": "08-11 16:08:10.040",
       "repeat_count": 1,
@@ -49,14 +49,14 @@
       "timestamp": "08-11 16:08:10.040",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_exception: java.lang.IllegalStateException: java.lang.IllegalStateException: kanzi view not attached",
+      "label": "首条异常：java.lang.IllegalStateException: java.lang.IllegalStateException: kanzi view not attached",
       "evidence_id": "E1"
     },
     {
       "timestamp": "08-11 16:08:10.040",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_exception: [JAVA_EXCEPTION] [L2] 08-11 16:08:10.040 W/AdasKanZiManager(5636): java.lang.IllegalStateException: kanzi view not attac",
+      "label": "首条异常：[JAVA_EXCEPTION] [L2] 08-11 16:08:10.040 W/AdasKanZiManager(5636): java.lang.IllegalStateException: kanzi view not attac",
       "evidence_id": "E2"
     }
   ],
@@ -91,16 +91,16 @@
   ],
   "root_causes": [
     {
-      "title": "A handled or logged exception occurred on the diagnosis path.",
+      "title": "诊断路径上出现已捕获或已打印的异常。",
       "status": "CANDIDATE",
       "confidence": "MEDIUM",
       "evidence_ids": [
         "E1",
         "E2"
       ],
-      "reasoning": "Highest category EXCEPTION (score=3.50).",
+      "reasoning": "最高分类为 EXCEPTION（得分=3.50）。",
       "need_verification": [
-        "Collect a longer log around the first error."
+        "在首条错误附近采集更长日志。"
       ],
       "reason": null,
       "source": "rule"
@@ -114,7 +114,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Collect a longer log around the first error.",
+      "text": "在首条错误附近采集更长日志。",
       "evidence_ids": [
         "E1",
         "E2"
@@ -123,7 +123,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

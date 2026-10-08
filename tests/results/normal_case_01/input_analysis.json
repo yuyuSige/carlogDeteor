@@ -1,13 +1,13 @@
 {
   "issue_type": "NORMAL",
   "severity": "NONE",
-  "summary": "Log window looks nominal: no crash, binder, state, or communication failure; no missing-text pattern.",
+  "summary": "该时间窗日志正常：无崩溃、Binder、状态机或通信失败，也无文言缺失模式。",
   "classification": {
     "issue_type": "NORMAL",
     "confidence": 0.9,
     "evidence_ids": [],
     "scores": {},
-    "reason": "No anomaly matched and no idle-signal / missing-text pattern."
+    "reason": "未匹配到异常，也没有信号空闲/文言缺失模式。"
   },
   "key_evidence": [],
   "timeline": [],
@@ -22,7 +22,7 @@
   "related_code": [],
   "recommendations": [],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

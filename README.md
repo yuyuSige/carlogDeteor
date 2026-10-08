@@ -55,10 +55,12 @@ py -3.11 -m adaslog parse path\to\file.log --stats
 py -3.11 -m adaslog analyze path\to\file.log --format all --print
 ```
 
-针对 `1611.log`（桌面上的真实样本，不要拷进 E02 工程）：
+针对本地日志（真实样本，不拷进 E02 工程）：
 
 ```bat
-py -3.11 -m adaslog analyze c:\Users\TS\Desktop\1611.log --time-range 16:11:00-16:12:00 --focus-signal FcwAcitveSt,AebAcitveSt --question "某时间段信号为0，则该信号的相应文言没有触发" --format all --out D:\carlogDeteor\reports
+py -3.11 -m adaslog analyze c:\Users\TS\Desktop\1611.log --time-range 16:11:00-16:12:00 --focus-signal FcwAcitveSt,AebAcitveSt --question "XXX相应文言没有触发" --format all --out D:\carlogDeteor\reports
+
+py -3.11 -m adaslog analyze c:\Users\TS\Desktop\1540.log --time-range 15:41:26-15:41:27 --focus-signal ParkingQuitInd --question "不显示暂停超时，泊车功能退出" --format all --out D:\carlogDeteor\reports
 ```
 
 LLM：先用自带规则引擎。要换模型时复制 `.env.example` 为 `.env`，填 `OPENAI_API_KEY` / `OPENAI_BASE_URL` 或 `ANTHROPIC_API_KEY`，再加 `--llm openai` 或 `--llm anthropic`。源码不写死 Key。

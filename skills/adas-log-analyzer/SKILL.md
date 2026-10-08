@@ -45,13 +45,13 @@ Switch LLM later without code changes: copy `.env.example` → `.env`, set `LLM_
 
 ## 6. Output Format
 
-Always keep the 11 sections:
+报告（md/txt）使用中文章节；JSON 中 issue_type 等枚举仍为英文。11 节：
 
 ```text
-1. Issue Type  2. Severity  3. Summary  4. Key Evidence
-5. Event Timeline  6. Possible Root Causes  7. Confidence
-8. Related Modules  9. Related Code  10. Recommended Investigation
-11. Unknown / Missing Information
+1. 问题类型  2. 严重程度  3. 摘要  4. 关键证据
+5. 事件时间线  6. 可能根因  7. 置信度
+8. 相关模块  9. 相关代码  10. 排查建议
+11. 未知 / 缺失信息
 ```
 
 Labels: **Fact / Evidence / Hypothesis / Recommendation / Unknown**.

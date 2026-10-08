@@ -1,7 +1,7 @@
 {
   "issue_type": "MODULE_COMMUNICATION",
   "severity": "HIGH",
-  "summary": "MODULE_COMMUNICATION (confidence 0.97). Key evidence: E1, E2, E3, E4, E5. Candidate: Cross-module communication failed (Kanzi / gRPC / bus / timeout).",
+  "summary": "MODULE_COMMUNICATION（置信度 0.97）。关键证据：E1、E2、E3、E4、E5。候选：跨模块通信失败（Kanzi / gRPC / 总线 / 超时）。",
   "classification": {
     "issue_type": "MODULE_COMMUNICATION",
     "confidence": 0.97,
@@ -16,7 +16,7 @@
       "EXCEPTION": 3.5,
       "MODULE_COMMUNICATION": 10.0
     },
-    "reason": "Highest category MODULE_COMMUNICATION (score=10.00)."
+    "reason": "最高分类为 MODULE_COMMUNICATION（得分=10.00）。"
   },
   "key_evidence": [
     {
@@ -25,7 +25,7 @@
       "category": "first_error",
       "event_id": 1,
       "text": "[L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
-      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "why_it_matters": "时间窗内第一条 ERROR，通常是最早症状。",
       "line_no": 2,
       "timestamp": "08-11 16:06:00.040",
       "repeat_count": 1,
@@ -39,7 +39,7 @@
       "category": "first_exception",
       "event_id": 1,
       "text": "[JAVA_EXCEPTION] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
-      "why_it_matters": "First exception / stack-bearing error.",
+      "why_it_matters": "第一条带堆栈的异常。",
       "line_no": 2,
       "timestamp": "08-11 16:06:00.040",
       "repeat_count": 1,
@@ -53,7 +53,7 @@
       "category": "communication_failure",
       "event_id": 1,
       "text": "[GRPC_FAILURE] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
-      "why_it_matters": "Cross-module communication failed.",
+      "why_it_matters": "跨模块通信失败。",
       "line_no": 2,
       "timestamp": "08-11 16:06:00.040",
       "repeat_count": 1,
@@ -67,7 +67,7 @@
       "category": "communication_failure",
       "event_id": 3,
       "text": "[GRPC_FAILURE] [L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries",
-      "why_it_matters": "Cross-module communication failed.",
+      "why_it_matters": "跨模块通信失败。",
       "line_no": 5,
       "timestamp": "08-11 16:06:00.070",
       "repeat_count": 1,
@@ -81,7 +81,7 @@
       "category": "communication_failure",
       "event_id": 2,
       "text": "[BUS_FAILURE] [L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
-      "why_it_matters": "Cross-module communication failed.",
+      "why_it_matters": "跨模块通信失败。",
       "line_no": 4,
       "timestamp": "08-11 16:06:00.055",
       "repeat_count": 1,
@@ -95,35 +95,35 @@
       "timestamp": "08-11 16:06:00.040",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_error: [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+      "label": "首条错误：[L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
       "evidence_id": "E1"
     },
     {
       "timestamp": "08-11 16:06:00.040",
       "line_no": 2,
       "event_id": 1,
-      "label": "first_exception: [JAVA_EXCEPTION] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: net",
+      "label": "首条异常：[JAVA_EXCEPTION] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: net",
       "evidence_id": "E2"
     },
     {
       "timestamp": "08-11 16:06:00.040",
       "line_no": 2,
       "event_id": 1,
-      "label": "communication_failure: [GRPC_FAILURE] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: netwo",
+      "label": "通信失败：[GRPC_FAILURE] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: netwo",
       "evidence_id": "E3"
     },
     {
       "timestamp": "08-11 16:06:00.055",
       "line_no": 4,
       "event_id": 2,
-      "label": "communication_failure: [BUS_FAILURE] [L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+      "label": "通信失败：[BUS_FAILURE] [L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
       "evidence_id": "E5"
     },
     {
       "timestamp": "08-11 16:06:00.070",
       "line_no": 5,
       "event_id": 3,
-      "label": "communication_failure: [GRPC_FAILURE] [L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries",
+      "label": "通信失败：[GRPC_FAILURE] [L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries",
       "evidence_id": "E4"
     }
   ],
@@ -207,7 +207,7 @@
   ],
   "root_causes": [
     {
-      "title": "Cross-module communication failed (Kanzi / gRPC / bus / timeout).",
+      "title": "跨模块通信失败（Kanzi / gRPC / 总线 / 超时）。",
       "status": "CANDIDATE",
       "confidence": "HIGH",
       "evidence_ids": [
@@ -217,9 +217,9 @@
         "E4",
         "E5"
       ],
-      "reasoning": "Highest category MODULE_COMMUNICATION (score=10.00).",
+      "reasoning": "最高分类为 MODULE_COMMUNICATION（得分=10.00）。",
       "need_verification": [
-        "Confirm the peer process was alive and the connection was established before the failure."
+        "确认对端进程当时存活，且失败前连接已建立。"
       ],
       "reason": null,
       "source": "rule"
@@ -233,7 +233,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Confirm the peer process was alive and the connection was established before the failure.",
+      "text": "确认对端进程当时存活，且失败前连接已建立。",
       "evidence_ids": [
         "E1",
         "E2",
@@ -245,7 +245,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

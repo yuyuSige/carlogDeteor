@@ -26,8 +26,8 @@ def validate_candidates(
                     status="UNKNOWN",
                     confidence="LOW",
                     evidence_ids=ids,
-                    reasoning=raw.get("reasoning") or raw.get("reason") or "Insufficient evidence.",
-                    reason="Insufficient evidence.",
+                    reasoning=raw.get("reasoning") or raw.get("reason") or "证据不足。",
+                    reason="证据不足。",
                     need_verification=list(raw.get("need_verification") or []),
                     source=raw.get("source") or result.provider,
                 )
@@ -41,9 +41,9 @@ def validate_candidates(
                     status="UNKNOWN",
                     confidence="LOW",
                     evidence_ids=[],
-                    reasoning="Claim dropped: no valid evidence ids.",
-                    reason="Insufficient evidence.",
-                    need_verification=["Re-run with a longer log or --source."],
+                    reasoning="该断言已丢弃：没有有效的证据编号。",
+                    reason="证据不足。",
+                    need_verification=["请用更长日志或 --source 重新分析。"],
                     source=raw.get("source") or result.provider,
                 )
             )
@@ -67,8 +67,8 @@ def validate_candidates(
                 status="UNKNOWN",
                 confidence="LOW",
                 evidence_ids=[],
-                reasoning="Insufficient evidence.",
-                reason="Insufficient evidence.",
+                reasoning="证据不足。",
+                reason="证据不足。",
                 source=result.provider,
             )
         )

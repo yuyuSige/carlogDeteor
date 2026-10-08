@@ -1,7 +1,7 @@
 {
   "issue_type": "STATE_MACHINE",
   "severity": "HIGH",
-  "summary": "STATE_MACHINE (confidence 0.825). Key evidence: E1. Candidate: State machine hit an undefined or illegal transition.",
+  "summary": "STATE_MACHINE（置信度 0.825）。关键证据：E1。候选：状态机发生未定义或非法转换。",
   "classification": {
     "issue_type": "STATE_MACHINE",
     "confidence": 0.825,
@@ -11,7 +11,7 @@
     "scores": {
       "STATE_MACHINE": 4.5
     },
-    "reason": "Highest category STATE_MACHINE (score=4.50)."
+    "reason": "最高分类为 STATE_MACHINE（得分=4.50）。"
   },
   "key_evidence": [
     {
@@ -20,7 +20,7 @@
       "category": "state_transition_failure",
       "event_id": 1,
       "text": "[STATE_ILLEGAL_TRANSITION] [L2] 08-11 16:07:01.100 W/StateMachine(5636): 未定义的状态转换: 当前状态 IDLE -> 预触发 ENTER_PARKING",
-      "why_it_matters": "State machine rejected or recovered from an illegal transition.",
+      "why_it_matters": "状态机拒绝或从非法转换中恢复。",
       "line_no": 2,
       "timestamp": "08-11 16:07:01.100",
       "repeat_count": 1,
@@ -34,7 +34,7 @@
       "timestamp": "08-11 16:07:01.100",
       "line_no": 2,
       "event_id": 1,
-      "label": "state_transition_failure: [STATE_ILLEGAL_TRANSITION] [L2] 08-11 16:07:01.100 W/StateMachine(5636): 未定义的状态转换: 当前状态 IDLE -> 预触发 ENTER_PARKING",
+      "label": "非法状态转换：[STATE_ILLEGAL_TRANSITION] [L2] 08-11 16:07:01.100 W/StateMachine(5636): 未定义的状态转换: 当前状态 IDLE -> 预触发 ENTER_PARKING",
       "evidence_id": "E1"
     }
   ],
@@ -54,15 +54,15 @@
   ],
   "root_causes": [
     {
-      "title": "State machine hit an undefined or illegal transition.",
+      "title": "状态机发生未定义或非法转换。",
       "status": "CANDIDATE",
       "confidence": "HIGH",
       "evidence_ids": [
         "E1"
       ],
-      "reasoning": "Highest category STATE_MACHINE (score=4.50).",
+      "reasoning": "最高分类为 STATE_MACHINE（得分=4.50）。",
       "need_verification": [
-        "Replay the (state, event) pair against StateMachine transition table."
+        "按 (状态, 事件) 对照 StateMachine 转换表回放。"
       ],
       "reason": null,
       "source": "rule"
@@ -76,7 +76,7 @@
   "related_code": [],
   "recommendations": [
     {
-      "text": "Replay the (state, event) pair against StateMachine transition table.",
+      "text": "按 (状态, 事件) 对照 StateMachine 转换表回放。",
       "evidence_ids": [
         "E1"
       ],
@@ -84,7 +84,7 @@
     }
   ],
   "unknowns": [
-    "No --source directory: Related Code is empty (optional)."
+    "未提供 --source 目录：相关代码为空（可选）。"
   ],
   "signal_summary": {
     "structs": {},

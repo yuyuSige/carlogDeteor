@@ -82,9 +82,10 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         config_path=args.config,
     )
     for path in result["outputs"]:
-        print(f"report: {path}")
+        print(f"报告: {path}")
     rep = result["report"]
-    print(f"issue_type={rep.issue_type} severity={rep.severity} confidence={rep.confidence}")
+    from adaslog.report.labels import issue as issue_zh, severity as sev_zh, confidence as conf_zh
+    print(f"问题类型={issue_zh(rep.issue_type)} 严重程度={sev_zh(rep.severity)} 置信度={conf_zh(rep.confidence)}")
     if args.print:
         print(result["rendered"].get("txt") or result["rendered"].get("md") or "")
     return 0

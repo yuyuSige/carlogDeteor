@@ -29,10 +29,10 @@ def build_rule_candidates(
                 status="UNKNOWN",
                 confidence="LOW",
                 evidence_ids=ev_ids[:3],
-                reasoning="Insufficient evidence.",
-                reason="Insufficient evidence.",
+                reasoning="证据不足。",
+                reason="证据不足。",
                 need_verification=[
-                    "Provide a longer window, a stack trace, or the module that reproduced the symptom."
+                    "请提供更长的时间窗、异常堆栈，或复现该症状的模块日志。"
                 ],
                 source="rule",
             )
@@ -46,10 +46,7 @@ def build_rule_candidates(
         fields = []
         if signal_summary:
             fields = [f"{p.struct}.{p.field}={p.value}" for p in signal_summary.focus if p.value in ("0", "0.0")]
-        title = (
-            "Focus signal stayed at 0 so the corresponding driving-text prompt was not queued "
-            "(Profile maps idle/0 to NO_TEXT)."
-        )
+        title = "焦点信号保持为 0，对应驾驶文言未入队（Profile 将空闲/0 映射为 NO_TEXT）。"
         return [
             RootCauseCandidate(
                 title=title,
@@ -57,42 +54,42 @@ def build_rule_candidates(
                 confidence="HIGH" if fields and any(e.category == "text_idle" for e in evidence) else conf,
                 evidence_ids=ids,
                 reasoning=(
-                    "E02 driving_text_tip handlers only call addTextToQueue when Profile.map*(value) "
-                    "returns a text id. Value 0 maps to NO_TEXT. Observed idle fields: "
-                    + (", ".join(fields) if fields else "(see evidence)")
-                    + f". DrivingTextManager trigger count={getattr(signal_summary, 'text_manager_trigger_count', 0)}, "
-                    f"idle count={getattr(signal_summary, 'text_manager_idle_count', 0)}."
+                    "E02 driving_text_tip 的 Handler 仅在 Profile.map*(value) 返回文言 ID 时调用 addTextToQueue。"
+                    "值为 0 时映射为 NO_TEXT。观测到的空闲字段："
+                    + ("、".join(fields) if fields else "（见证据）")
+                    + f"。DrivingTextManager 触发次数={getattr(signal_summary, 'text_manager_trigger_count', 0)}，"
+                    f"空闲次数={getattr(signal_summary, 'text_manager_idle_count', 0)}。"
                 ),
                 need_verification=[
-                    "Confirm the expected non-zero value for the focus signal in that time window.",
-                    "If the signal should have been non-zero, inspect VDS / SOME-IP publisher (not the text manager).",
+                    "确认该时间窗内焦点信号是否本应出现非 0 值。",
+                    "若信号本应非 0，请排查 VDS / SOME-IP 发布端，而不是文言管理器。",
                 ],
                 source="rule",
             )
         ]
 
     title_map = {
-        "CRASH": "Process crashed (fatal exception / native abort).",
-        "EXCEPTION": "A handled or logged exception occurred on the diagnosis path.",
-        "BINDER_IPC": "Binder/IPC transaction failed or the remote service died.",
-        "STATE_MACHINE": "State machine hit an undefined or illegal transition.",
-        "MODULE_COMMUNICATION": "Cross-module communication failed (Kanzi / gRPC / bus / timeout).",
-        "SYSTEM_ERROR": "Android system-level error accompanied the symptom.",
-        "ANR": "Application Not Responding (main thread blocked).",
-        "PERFORMANCE": "Frame jank / slow operation reported.",
-        "BUSINESS_ERROR": "Business-level error without a crash.",
+        "CRASH": "进程崩溃（Fatal 异常 / native abort）。",
+        "EXCEPTION": "诊断路径上出现已捕获或已打印的异常。",
+        "BINDER_IPC": "Binder/IPC 事务失败或远端服务已死亡。",
+        "STATE_MACHINE": "状态机发生未定义或非法转换。",
+        "MODULE_COMMUNICATION": "跨模块通信失败（Kanzi / gRPC / 总线 / 超时）。",
+        "SYSTEM_ERROR": "伴随症状出现了 Android 系统级错误。",
+        "ANR": "应用无响应（主线程阻塞）。",
+        "PERFORMANCE": "出现掉帧或慢操作。",
+        "BUSINESS_ERROR": "未崩溃的业务级错误。",
     }
     verify_map = {
-        "CRASH": ["Open the first app frame in --source and check the null / illegal state."],
-        "BINDER_IPC": ["Check the remote service process death and the AIDL interface that failed."],
-        "STATE_MACHINE": ["Replay the (state, event) pair against StateMachine transition table."],
-        "MODULE_COMMUNICATION": ["Confirm the peer process was alive and the connection was established before the failure."],
-        "SIGNAL_NOT_TRIGGERED": ["Check whether the publisher ever sent a non-zero value."],
+        "CRASH": ["用 --source 打开第一个应用堆栈帧，检查空指针或非法状态。"],
+        "BINDER_IPC": ["检查远端服务进程是否死亡，以及失败的 AIDL 接口。"],
+        "STATE_MACHINE": ["按 (状态, 事件) 对照 StateMachine 转换表回放。"],
+        "MODULE_COMMUNICATION": ["确认对端进程当时存活，且失败前连接已建立。"],
+        "SIGNAL_NOT_TRIGGERED": ["检查发布端是否曾经发出过非 0 值。"],
     }
     extra = ""
     if code_hits:
         h = code_hits[0]
-        extra = f" First code hit: {h.file}:{h.line} {h.symbol}."
+        extra = f" 首个代码命中：{h.file}:{h.line} {h.symbol}。"
         ev_ids = list(dict.fromkeys(ev_ids + h.evidence_ids))
     return [
         RootCauseCandidate(
@@ -101,7 +98,7 @@ def build_rule_candidates(
             confidence=conf,
             evidence_ids=ev_ids[:8],
             reasoning=classification.reason + extra,
-            need_verification=verify_map.get(itype, ["Collect a longer log around the first error."]),
+            need_verification=verify_map.get(itype, ["在首条错误附近采集更长日志。"]),
             source="rule",
         )
     ]
