@@ -1,0 +1,6 @@
+# Core pipeline is standard-library only (Python 3.11+).
+# Development / test
+pytest>=7
+# Optional: nicer console output (graceful fallback if absent)
+# rich>=13
+# Optional: real LLM providers are called via urllib (no SDK required).

@@ -1,0 +1,30 @@
+{
+  "_comment": "Read-only knowledge from E02 driving_text_tip Profile: value 0 (and most unexpected values) map to NO_TEXT, so the corresponding prompt is not queued.",
+  "idle_value": "0",
+  "fields": {
+    "FcwAcitveSt": {
+      "struct": "AdasActiveSafetyFcnInfo",
+      "idle": "0",
+      "trigger_values": ["2", "3"],
+      "text_hint": "FCW warning (profile maps 0x2/0x3; 0 -> NO_TEXT)"
+    },
+    "AebAcitveSt": {
+      "struct": "AdasActiveSafetyFcnInfo",
+      "idle": "0",
+      "trigger_values": ["2"],
+      "text_hint": "AEB active (profile maps 0x2; 0 -> NO_TEXT)"
+    },
+    "EssSts": {
+      "struct": "AdasESSInfo",
+      "idle": "0",
+      "trigger_values": ["1", "2"],
+      "text_hint": "ESS status text"
+    },
+    "AesSts": {
+      "struct": "AdasESSInfo",
+      "idle": "0",
+      "trigger_values": ["1", "2"],
+      "text_hint": "AES status text"
+    }
+  }
+}

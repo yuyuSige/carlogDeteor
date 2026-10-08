@@ -1,0 +1,36 @@
+{
+  "context": {
+    "window_lines": 12,
+    "window_seconds": 3.0,
+    "max_anchors": 8
+  },
+  "extractor": {
+    "max_key_evidence": 25,
+    "collapse_repeats": true
+  },
+  "classifier": {
+    "normal_confidence": 0.9,
+    "unknown_confidence": 0.3,
+    "min_specific_score": 2.0
+  },
+  "signals": {
+    "trigger_field_patterns": ["ActiveSt$", "TextInfo", "TextInfomation", "Warning$", "WarnTypeSts$"],
+    "idle_value": "0",
+    "text_manager_tags": ["DrivingTextManager"],
+    "text_idle_message": "\u961f\u5217\u4e3a\u7a7a\u4e14\u65e0\u5f53\u524d\u663e\u793a",
+    "text_trigger_messages": ["\u6587\u8a00\u52a0\u5165\u961f\u5217", "\u663e\u793a\u6587\u8a00", "\u53d8\u5316: "]
+  },
+  "code": {
+    "extensions": [".kt", ".java", ".xml"],
+    "snippet_radius": 8,
+    "max_hits": 12
+  },
+  "report": {
+    "default_format": "md",
+    "output_dir": "reports"
+  },
+  "llm": {
+    "provider": "rule",
+    "timeout": 60
+  }
+}
