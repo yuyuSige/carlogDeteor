@@ -1,0 +1,7 @@
+{
+  "issue_type": "MODULE_COMMUNICATION",
+  "must_have_evidence_categories": ["communication_failure"],
+  "root_cause_status": "CANDIDATE",
+  "manual_minutes_estimate": 20,
+  "manual_minutes_note": "estimate"
+}

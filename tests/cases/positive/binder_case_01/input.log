@@ -1,0 +1,7 @@
+08-11 16:10:01.100  5636  5636 I AvmSdkService: connection established
+08-11 16:10:01.220  5636  5701 D AvmSdkService: binder transaction begin IAvmSdkService.setMode
+08-11 16:10:01.240  5636  5701 E AvmSdkService: android.os.DeadObjectException
+08-11 16:10:01.240  5636  5701 E AvmSdkService: 	at android.os.BinderProxy.transactNative(Native Method)
+08-11 16:10:01.240  5636  5701 E AvmSdkService: 	at com.chery.ivi.adas.avmcalibration.IAvmSdkService$Stub$Proxy.setMode(IAvmSdkService.java:88)
+08-11 16:10:01.251  5636  5636 W AvmWindowManager: onServiceDisconnected: shared surface
+08-11 16:10:01.260  5636  5636 E AvmSdkService: retry failed after DeadObjectException

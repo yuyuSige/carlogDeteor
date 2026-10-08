@@ -1,0 +1,9 @@
+--------- beginning of crash
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: FATAL EXCEPTION: main
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: Process: com.chery.ivi.adas, PID: 4577
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: java.lang.NullPointerException: Attempt to invoke virtual method 'void android.view.View.setVisibility(int)' on a null object reference
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at com.chery.ivi.adas.manager.avm.AvmViewPresenter.showView(AvmViewPresenter.kt:214)
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at com.chery.ivi.adas.manager.avm.AvmViewPresenter.onEvent(AvmViewPresenter.kt:98)
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:938)
+08-11 16:09:14.797   456  1890 W ActivityTaskManager:   Force finishing activity com.chery.ivi.adas/.MainActivity
+08-11 16:09:14.854   456  1264 I ActivityManager: Process com.chery.ivi.adas (pid 4577) has died: fg  TOP

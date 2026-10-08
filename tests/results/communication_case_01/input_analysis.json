@@ -1,0 +1,278 @@
+{
+  "issue_type": "MODULE_COMMUNICATION",
+  "severity": "HIGH",
+  "summary": "MODULE_COMMUNICATION (confidence 0.97). Key evidence: E1, E2, E3, E4, E5. Candidate: Cross-module communication failed (Kanzi / gRPC / bus / timeout).",
+  "classification": {
+    "issue_type": "MODULE_COMMUNICATION",
+    "confidence": 0.97,
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "scores": {
+      "EXCEPTION": 3.5,
+      "MODULE_COMMUNICATION": 10.0
+    },
+    "reason": "Highest category MODULE_COMMUNICATION (score=10.00)."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "first_error",
+      "event_id": 1,
+      "text": "[L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "line_no": 2,
+      "timestamp": "08-11 16:06:00.040",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    },
+    {
+      "id": "E2",
+      "label": "EVIDENCE",
+      "category": "first_exception",
+      "event_id": 1,
+      "text": "[JAVA_EXCEPTION] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+      "why_it_matters": "First exception / stack-bearing error.",
+      "line_no": 2,
+      "timestamp": "08-11 16:06:00.040",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    },
+    {
+      "id": "E3",
+      "label": "EVIDENCE",
+      "category": "communication_failure",
+      "event_id": 1,
+      "text": "[GRPC_FAILURE] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+      "why_it_matters": "Cross-module communication failed.",
+      "line_no": 2,
+      "timestamp": "08-11 16:06:00.040",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    },
+    {
+      "id": "E4",
+      "label": "EVIDENCE",
+      "category": "communication_failure",
+      "event_id": 3,
+      "text": "[GRPC_FAILURE] [L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries",
+      "why_it_matters": "Cross-module communication failed.",
+      "line_no": 5,
+      "timestamp": "08-11 16:06:00.070",
+      "repeat_count": 1,
+      "related_event_ids": [
+        3
+      ]
+    },
+    {
+      "id": "E5",
+      "label": "EVIDENCE",
+      "category": "communication_failure",
+      "event_id": 2,
+      "text": "[BUS_FAILURE] [L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+      "why_it_matters": "Cross-module communication failed.",
+      "line_no": 4,
+      "timestamp": "08-11 16:06:00.055",
+      "repeat_count": 1,
+      "related_event_ids": [
+        2
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": "08-11 16:06:00.040",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "first_error: [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+      "evidence_id": "E1"
+    },
+    {
+      "timestamp": "08-11 16:06:00.040",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "first_exception: [JAVA_EXCEPTION] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: net",
+      "evidence_id": "E2"
+    },
+    {
+      "timestamp": "08-11 16:06:00.040",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "communication_failure: [GRPC_FAILURE] [L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: netwo",
+      "evidence_id": "E3"
+    },
+    {
+      "timestamp": "08-11 16:06:00.055",
+      "line_no": 4,
+      "event_id": 2,
+      "label": "communication_failure: [BUS_FAILURE] [L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+      "evidence_id": "E5"
+    },
+    {
+      "timestamp": "08-11 16:06:00.070",
+      "line_no": 5,
+      "event_id": 3,
+      "label": "communication_failure: [GRPC_FAILURE] [L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries",
+      "evidence_id": "E4"
+    }
+  ],
+  "causal_chain": [
+    {
+      "from_evidence": "E1",
+      "to_evidence": "E2",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E2",
+      "to_evidence": "E3",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E3",
+      "to_evidence": "E5",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E5",
+      "to_evidence": "E4",
+      "relation": "precedes"
+    }
+  ],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:06:00.010 I/GrpcConnectionManager(5636): channel connecting"
+      ],
+      "after": [
+        "[L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+        "[L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E2",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:06:00.010 I/GrpcConnectionManager(5636): channel connecting"
+      ],
+      "after": [
+        "[L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+        "[L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E3",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:06:00.010 I/GrpcConnectionManager(5636): channel connecting"
+      ],
+      "after": [
+        "[L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded",
+        "[L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E4",
+      "anchor_event_id": 3,
+      "before": [
+        "[L1] 08-11 16:06:00.010 I/GrpcConnectionManager(5636): channel connecting",
+        "[L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed",
+        "[L4] 08-11 16:06:00.055 W/GrpcConnectionManager(5636): retry failed, deadline exceeded"
+      ],
+      "after": []
+    },
+    {
+      "anchor_evidence_id": "E5",
+      "anchor_event_id": 2,
+      "before": [
+        "[L1] 08-11 16:06:00.010 I/GrpcConnectionManager(5636): channel connecting",
+        "[L2] 08-11 16:06:00.040 E/GrpcConnectionManager(5636): io.grpc.StatusRuntimeException: UNAVAILABLE: network closed"
+      ],
+      "after": [
+        "[L5] 08-11 16:06:00.070 E/GrpcConnectionManager(5636): DEADLINE_EXCEEDED after 3 retries"
+      ]
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "Cross-module communication failed (Kanzi / gRPC / bus / timeout).",
+      "status": "CANDIDATE",
+      "confidence": "HIGH",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "reasoning": "Highest category MODULE_COMMUNICATION (score=10.00).",
+      "need_verification": [
+        "Confirm the peer process was alive and the connection was established before the failure."
+      ],
+      "reason": null,
+      "source": "rule"
+    }
+  ],
+  "confidence": "HIGH",
+  "related_modules": [
+    "communication/grpc"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Confirm the peer process was alive and the connection was established before the failure.",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": "08-11 16:06:00.010 .. 08-11 16:06:00.070"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\positive\\communication_case_01\\input.log",
+    "size_bytes": 506,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 5,
+    "events_total": 4,
+    "processes": {},
+    "time_start": "08-11 16:06:00.010",
+    "time_end": "08-11 16:06:00.070",
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 4,
+    "event_count": 4
+  }
+}

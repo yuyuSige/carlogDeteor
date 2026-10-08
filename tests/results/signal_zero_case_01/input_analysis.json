@@ -1,0 +1,271 @@
+{
+  "issue_type": "SIGNAL_NOT_TRIGGERED",
+  "severity": "MEDIUM",
+  "summary": "SIGNAL_NOT_TRIGGERED (confidence 0.783). Key evidence: E1, E2, E3. Candidate: Focus signal stayed at 0 so the corresponding driving-text prompt was not queued (Profile maps idle/0 to NO_TEXT).",
+  "classification": {
+    "issue_type": "SIGNAL_NOT_TRIGGERED",
+    "confidence": 0.783,
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3"
+    ],
+    "scores": {
+      "SIGNAL_NOT_TRIGGERED": 4.0
+    },
+    "reason": "Highest category SIGNAL_NOT_TRIGGERED (score=4.00). User question points to a missing driving-text prompt; signal/text correlation is the primary hypothesis."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "signal_idle",
+      "event_id": 0,
+      "text": "AdasActiveSafetyFcnInfo.FcwAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "why_it_matters": "Focus signal stayed at idle (0); Profile maps this to NO_TEXT.",
+      "line_no": 1,
+      "timestamp": "08-11 16:11:20.100",
+      "repeat_count": 1,
+      "related_event_ids": [
+        0
+      ]
+    },
+    {
+      "id": "E2",
+      "label": "EVIDENCE",
+      "category": "signal_idle",
+      "event_id": 0,
+      "text": "AdasActiveSafetyFcnInfo.AebAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "why_it_matters": "Focus signal stayed at idle (0); Profile maps this to NO_TEXT.",
+      "line_no": 1,
+      "timestamp": "08-11 16:11:20.100",
+      "repeat_count": 1,
+      "related_event_ids": [
+        0
+      ]
+    },
+    {
+      "id": "E3",
+      "label": "EVIDENCE",
+      "category": "text_idle",
+      "event_id": 3,
+      "text": "DrivingTextManager idle x2 (empty queue, waiting for a new prompt).",
+      "why_it_matters": "DrivingTextManager reported an empty queue / no current display.",
+      "line_no": 4,
+      "timestamp": "08-11 16:11:21.011",
+      "repeat_count": 2,
+      "related_event_ids": [
+        3
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": "08-11 16:11:20.100",
+      "line_no": 1,
+      "event_id": 0,
+      "label": "signal_idle: AdasActiveSafetyFcnInfo.FcwAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "evidence_id": "E1"
+    },
+    {
+      "timestamp": "08-11 16:11:20.100",
+      "line_no": 1,
+      "event_id": 0,
+      "label": "signal_idle: AdasActiveSafetyFcnInfo.AebAcitveSt=0 from 08-11 16:11:20.100 to 08-11 16:11:22.100 (3 samples, lines 1-5)",
+      "evidence_id": "E2"
+    },
+    {
+      "timestamp": "08-11 16:11:21.011",
+      "line_no": 4,
+      "event_id": 3,
+      "label": "text_idle: DrivingTextManager idle x2 (empty queue, waiting for a new prompt).",
+      "evidence_id": "E3"
+    }
+  ],
+  "causal_chain": [
+    {
+      "from_evidence": "E1",
+      "to_evidence": "E2",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E2",
+      "to_evidence": "E3",
+      "relation": "precedes"
+    }
+  ],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 0,
+      "before": [],
+      "after": [
+        "[L2] 08-11 16:11:20.140 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc...",
+        "[L3] 08-11 16:11:21.010 D/ActiveSafetyFcnInfoHandler(5636): FcwAcitveSt变化: -1 -> 0",
+        "[L4] 08-11 16:11:21.011 D/DrivingTextManager(5636): 队列为空且无当前显示，等待新文言触发",
+        "[L5] 08-11 16:11:22.100 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc..."
+      ]
+    },
+    {
+      "anchor_evidence_id": "E2",
+      "anchor_event_id": 0,
+      "before": [],
+      "after": [
+        "[L2] 08-11 16:11:20.140 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc...",
+        "[L3] 08-11 16:11:21.010 D/ActiveSafetyFcnInfoHandler(5636): FcwAcitveSt变化: -1 -> 0",
+        "[L4] 08-11 16:11:21.011 D/DrivingTextManager(5636): 队列为空且无当前显示，等待新文言触发",
+        "[L5] 08-11 16:11:22.100 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc..."
+      ]
+    },
+    {
+      "anchor_evidence_id": "E3",
+      "anchor_event_id": 3,
+      "before": [
+        "[L1] 08-11 16:11:20.100 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc...",
+        "[L2] 08-11 16:11:20.140 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc...",
+        "[L3] 08-11 16:11:21.010 D/ActiveSafetyFcnInfoHandler(5636): FcwAcitveSt变化: -1 -> 0"
+      ],
+      "after": [
+        "[L5] 08-11 16:11:22.100 D/CommonAdapter(1736): notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAc...",
+        "[L6] 08-11 16:11:23.200 D/DrivingTextManager(5636): 队列为空且无当前显示，等待新文言触发"
+      ]
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "Focus signal stayed at 0 so the corresponding driving-text prompt was not queued (Profile maps idle/0 to NO_TEXT).",
+      "status": "CANDIDATE",
+      "confidence": "HIGH",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "reasoning": "E02 driving_text_tip handlers only call addTextToQueue when Profile.map*(value) returns a text id. Value 0 maps to NO_TEXT. Observed idle fields: AdasActiveSafetyFcnInfo.FcwAcitveSt=0, AdasActiveSafetyFcnInfo.AebAcitveSt=0. DrivingTextManager trigger count=0, idle count=2.",
+      "need_verification": [
+        "Confirm the expected non-zero value for the focus signal in that time window.",
+        "If the signal should have been non-zero, inspect VDS / SOME-IP publisher (not the text manager)."
+      ],
+      "reason": null,
+      "source": "rule"
+    }
+  ],
+  "confidence": "HIGH",
+  "related_modules": [
+    "driving_text_tip",
+    "vds/signal_publisher"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Treat signal=0 as expected NO_TEXT: do not look for a DrivingTextManager bug unless a non-zero value was published.",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "priority": 1
+    },
+    {
+      "text": "Confirm the expected non-zero value for the focus signal in that time window.",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "priority": 2
+    },
+    {
+      "text": "If the signal should have been non-zero, inspect VDS / SOME-IP publisher (not the text manager).",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {
+      "AdasActiveSafetyFcnInfo": 3
+    },
+    "constant_fields": [
+      {
+        "struct": "AdasActiveSafetyFcnInfo",
+        "field": "FcwAcitveSt",
+        "value": "0",
+        "start_ts": "08-11 16:11:20.100",
+        "end_ts": "08-11 16:11:22.100",
+        "samples": 3,
+        "first_line": 1,
+        "last_line": 5,
+        "pid": 1736
+      },
+      {
+        "struct": "AdasActiveSafetyFcnInfo",
+        "field": "AebAcitveSt",
+        "value": "0",
+        "start_ts": "08-11 16:11:20.100",
+        "end_ts": "08-11 16:11:22.100",
+        "samples": 3,
+        "first_line": 1,
+        "last_line": 5,
+        "pid": 1736
+      }
+    ],
+    "changed_fields": {},
+    "focus": [
+      {
+        "struct": "AdasActiveSafetyFcnInfo",
+        "field": "FcwAcitveSt",
+        "value": "0",
+        "start_ts": "08-11 16:11:20.100",
+        "end_ts": "08-11 16:11:22.100",
+        "samples": 3,
+        "first_line": 1,
+        "last_line": 5,
+        "pid": 1736
+      },
+      {
+        "struct": "AdasActiveSafetyFcnInfo",
+        "field": "AebAcitveSt",
+        "value": "0",
+        "start_ts": "08-11 16:11:20.100",
+        "end_ts": "08-11 16:11:22.100",
+        "samples": 3,
+        "first_line": 1,
+        "last_line": 5,
+        "pid": 1736
+      }
+    ],
+    "text_manager_idle_count": 2,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": "DrivingTextManager",
+    "window": "08-11 16:11:20.100 .. 08-11 16:11:23.200"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\positive\\signal_zero_case_01\\input.log",
+    "size_bytes": 808,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 6,
+    "events_total": 6,
+    "processes": {},
+    "time_start": "08-11 16:11:20.100",
+    "time_end": "08-11 16:11:23.200",
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": "16:11 段 Fcw/Aeb 信号为0，对应文言没有触发",
+    "focus_signals": [
+      "FcwAcitveSt",
+      "AebAcitveSt"
+    ],
+    "anomaly_count": 0,
+    "event_count": 6
+  }
+}

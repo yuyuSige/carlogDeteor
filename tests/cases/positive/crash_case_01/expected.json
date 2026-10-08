@@ -1,0 +1,8 @@
+{
+  "issue_type": "CRASH",
+  "must_have_evidence_categories": ["fatal", "first_exception"],
+  "root_cause_status": "CANDIDATE",
+  "forbid_root_cause": false,
+  "manual_minutes_estimate": 20,
+  "manual_minutes_note": "estimate"
+}

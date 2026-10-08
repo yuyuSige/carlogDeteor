@@ -1,0 +1,7 @@
+{
+  "issue_type": "STATE_MACHINE",
+  "must_have_evidence_categories": ["state_transition_failure"],
+  "root_cause_status": "CANDIDATE",
+  "manual_minutes_estimate": 20,
+  "manual_minutes_note": "estimate"
+}

@@ -1,0 +1,156 @@
+{
+  "issue_type": "EXCEPTION",
+  "severity": "HIGH",
+  "summary": "EXCEPTION (confidence 0.742). Key evidence: E1, E2. Candidate: A handled or logged exception occurred on the diagnosis path.",
+  "classification": {
+    "issue_type": "EXCEPTION",
+    "confidence": 0.742,
+    "evidence_ids": [
+      "E1",
+      "E2"
+    ],
+    "scores": {
+      "EXCEPTION": 3.5
+    },
+    "reason": "Highest category EXCEPTION (score=3.50)."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "first_exception",
+      "event_id": 1,
+      "text": "java.lang.IllegalStateException: java.lang.IllegalStateException: kanzi view not attached",
+      "why_it_matters": "First exception / stack-bearing error.",
+      "line_no": 2,
+      "timestamp": "08-11 16:08:10.040",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    },
+    {
+      "id": "E2",
+      "label": "EVIDENCE",
+      "category": "first_exception",
+      "event_id": 1,
+      "text": "[JAVA_EXCEPTION] [L2] 08-11 16:08:10.040 W/AdasKanZiManager(5636): java.lang.IllegalStateException: kanzi view not attached",
+      "why_it_matters": "First exception / stack-bearing error.",
+      "line_no": 2,
+      "timestamp": "08-11 16:08:10.040",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": "08-11 16:08:10.040",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "first_exception: java.lang.IllegalStateException: java.lang.IllegalStateException: kanzi view not attached",
+      "evidence_id": "E1"
+    },
+    {
+      "timestamp": "08-11 16:08:10.040",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "first_exception: [JAVA_EXCEPTION] [L2] 08-11 16:08:10.040 W/AdasKanZiManager(5636): java.lang.IllegalStateException: kanzi view not attac",
+      "evidence_id": "E2"
+    }
+  ],
+  "causal_chain": [
+    {
+      "from_evidence": "E1",
+      "to_evidence": "E2",
+      "relation": "precedes"
+    }
+  ],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:08:10.010 I/AdasKanZiManager(5636): Kanzi session init"
+      ],
+      "after": [
+        "[L5] 08-11 16:08:10.055 I/AdasKanZiManager(5636): catch and continue, session stays alive"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E2",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:08:10.010 I/AdasKanZiManager(5636): Kanzi session init"
+      ],
+      "after": [
+        "[L5] 08-11 16:08:10.055 I/AdasKanZiManager(5636): catch and continue, session stays alive"
+      ]
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "A handled or logged exception occurred on the diagnosis path.",
+      "status": "CANDIDATE",
+      "confidence": "MEDIUM",
+      "evidence_ids": [
+        "E1",
+        "E2"
+      ],
+      "reasoning": "Highest category EXCEPTION (score=3.50).",
+      "need_verification": [
+        "Collect a longer log around the first error."
+      ],
+      "reason": null,
+      "source": "rule"
+    }
+  ],
+  "confidence": "MEDIUM",
+  "related_modules": [
+    "communication/kanzi"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Collect a longer log around the first error.",
+      "evidence_ids": [
+        "E1",
+        "E2"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": "08-11 16:08:10.010 .. 08-11 16:08:10.055"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\positive\\exception_case_01\\input.log",
+    "size_bytes": 540,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 5,
+    "events_total": 3,
+    "processes": {},
+    "time_start": "08-11 16:08:10.010",
+    "time_end": "08-11 16:08:10.055",
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 1,
+    "event_count": 3
+  }
+}

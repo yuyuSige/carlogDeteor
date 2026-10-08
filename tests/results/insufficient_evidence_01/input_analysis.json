@@ -1,0 +1,109 @@
+{
+  "issue_type": "UNKNOWN",
+  "severity": "LOW",
+  "summary": "An error-like symptom is present but evidence is insufficient for a specific root cause.",
+  "classification": {
+    "issue_type": "UNKNOWN",
+    "confidence": 0.3,
+    "evidence_ids": [
+      "E1"
+    ],
+    "scores": {},
+    "reason": "Error-level lines exist but there is no stack, context or module evidence."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "first_error",
+      "event_id": 0,
+      "text": "[L1] E/: something happened",
+      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "line_no": 1,
+      "timestamp": null,
+      "repeat_count": 1,
+      "related_event_ids": [
+        0
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": null,
+      "line_no": 1,
+      "event_id": 0,
+      "label": "first_error: [L1] E/: something happened",
+      "evidence_id": "E1"
+    }
+  ],
+  "causal_chain": [],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 0,
+      "before": [],
+      "after": []
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "UNKNOWN",
+      "status": "UNKNOWN",
+      "confidence": "LOW",
+      "evidence_ids": [
+        "E1"
+      ],
+      "reasoning": "Insufficient evidence.",
+      "need_verification": [
+        "Provide a longer window, a stack trace, or the module that reproduced the symptom."
+      ],
+      "reason": "Insufficient evidence.",
+      "source": "rule"
+    }
+  ],
+  "confidence": "LOW",
+  "related_modules": [],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Provide a longer window, a stack trace, or the module that reproduced the symptom.",
+      "evidence_ids": [
+        "E1"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "Insufficient evidence for a specific root cause (no stack / module / signal context).",
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": null
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\negative\\insufficient_evidence_01\\input.log",
+    "size_bytes": 26,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 1,
+    "events_total": 1,
+    "processes": {},
+    "time_start": null,
+    "time_end": null,
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 0,
+    "event_count": 1
+  }
+}

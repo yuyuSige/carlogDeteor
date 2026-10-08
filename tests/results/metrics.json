@@ -1,0 +1,116 @@
+{
+  "classification": {
+    "accuracy": 1.0,
+    "macro": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "per_type": {
+      "BINDER_IPC": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "CRASH": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "EXCEPTION": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "MODULE_COMMUNICATION": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "NORMAL": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "SIGNAL_NOT_TRIGGERED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "STATE_MACHINE": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "UNKNOWN": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    }
+  },
+  "key_log_extraction": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "evidence_coverage": 1.0,
+  "hallucination_rate": 0.0,
+  "negative_control_pass_rate": 1.0,
+  "efficiency": {
+    "manual_minutes_note": "engineer estimate, labelled as estimate",
+    "cases": [
+      {
+        "case": "binder_case_01",
+        "manual_minutes_estimate": 25,
+        "ai_seconds": 0.003,
+        "note": "estimate"
+      },
+      {
+        "case": "communication_case_01",
+        "manual_minutes_estimate": 20,
+        "ai_seconds": 0.003,
+        "note": "estimate"
+      },
+      {
+        "case": "crash_case_01",
+        "manual_minutes_estimate": 20,
+        "ai_seconds": 0.003,
+        "note": "estimate"
+      },
+      {
+        "case": "exception_case_01",
+        "manual_minutes_estimate": 15,
+        "ai_seconds": 0.003,
+        "note": "estimate"
+      },
+      {
+        "case": "signal_zero_case_01",
+        "manual_minutes_estimate": 30,
+        "ai_seconds": 0.003,
+        "note": "estimate"
+      },
+      {
+        "case": "state_case_01",
+        "manual_minutes_estimate": 20,
+        "ai_seconds": 0.002,
+        "note": "estimate"
+      },
+      {
+        "case": "insufficient_evidence_01",
+        "manual_minutes_estimate": 8,
+        "ai_seconds": 0.002,
+        "note": "estimate"
+      },
+      {
+        "case": "normal_case_01",
+        "manual_minutes_estimate": 5,
+        "ai_seconds": 0.002,
+        "note": "estimate"
+      }
+    ]
+  },
+  "n_cases": 8,
+  "passed": 8,
+  "failed": 0
+}

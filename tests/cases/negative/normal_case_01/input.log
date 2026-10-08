@@ -1,0 +1,4 @@
+08-11 16:05:00.010  5636  5636 I AdasService: service started
+08-11 16:05:00.020  5636  5636 I AdasKanZiManager: connection established
+08-11 16:05:00.040  5636  5636 I AdasService: request completed
+08-11 16:05:00.050  5636  5636 I AdasService: response received

@@ -1,0 +1,55 @@
+{
+  "issue_type": "NORMAL",
+  "severity": "NONE",
+  "summary": "Log window looks nominal: no crash, binder, state, or communication failure; no missing-text pattern.",
+  "classification": {
+    "issue_type": "NORMAL",
+    "confidence": 0.9,
+    "evidence_ids": [],
+    "scores": {},
+    "reason": "No anomaly matched and no idle-signal / missing-text pattern."
+  },
+  "key_evidence": [],
+  "timeline": [],
+  "causal_chain": [],
+  "context_windows": [],
+  "root_causes": [],
+  "confidence": "HIGH",
+  "related_modules": [
+    "communication/kanzi"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": "08-11 16:05:00.010 .. 08-11 16:05:00.050"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\negative\\normal_case_01\\input.log",
+    "size_bytes": 268,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 4,
+    "events_total": 4,
+    "processes": {},
+    "time_start": "08-11 16:05:00.010",
+    "time_end": "08-11 16:05:00.050",
+    "llm_provider": "none",
+    "llm_status": "skipped",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 0,
+    "event_count": 4
+  }
+}

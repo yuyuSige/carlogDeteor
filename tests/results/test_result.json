@@ -1,0 +1,222 @@
+{
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "cases": [
+    {
+      "case": "binder_case_01",
+      "group": "positive",
+      "expected": "BINDER_IPC",
+      "actual": "BINDER_IPC",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "first_error",
+          "line_no": 3
+        },
+        {
+          "id": "E2",
+          "category": "binder_failure",
+          "line_no": 3
+        },
+        {
+          "id": "E3",
+          "category": "service_disconnected",
+          "line_no": 6
+        },
+        {
+          "id": "E4",
+          "category": "first_exception",
+          "line_no": 3
+        },
+        {
+          "id": "E5",
+          "category": "communication_failure",
+          "line_no": 7
+        }
+      ],
+      "seconds": 0.003,
+      "manual_minutes_estimate": 25,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "communication_case_01",
+      "group": "positive",
+      "expected": "MODULE_COMMUNICATION",
+      "actual": "MODULE_COMMUNICATION",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "first_error",
+          "line_no": 2
+        },
+        {
+          "id": "E2",
+          "category": "first_exception",
+          "line_no": 2
+        },
+        {
+          "id": "E3",
+          "category": "communication_failure",
+          "line_no": 2
+        },
+        {
+          "id": "E4",
+          "category": "communication_failure",
+          "line_no": 5
+        },
+        {
+          "id": "E5",
+          "category": "communication_failure",
+          "line_no": 4
+        }
+      ],
+      "seconds": 0.003,
+      "manual_minutes_estimate": 20,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "crash_case_01",
+      "group": "positive",
+      "expected": "CRASH",
+      "actual": "CRASH",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "first_error",
+          "line_no": 2
+        },
+        {
+          "id": "E2",
+          "category": "fatal",
+          "line_no": 2
+        },
+        {
+          "id": "E3",
+          "category": "first_exception",
+          "line_no": 2
+        },
+        {
+          "id": "E4",
+          "category": "crash",
+          "line_no": 8
+        },
+        {
+          "id": "E5",
+          "category": "crash",
+          "line_no": 9
+        }
+      ],
+      "seconds": 0.003,
+      "manual_minutes_estimate": 20,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "exception_case_01",
+      "group": "positive",
+      "expected": "EXCEPTION",
+      "actual": "EXCEPTION",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "first_exception",
+          "line_no": 2
+        },
+        {
+          "id": "E2",
+          "category": "first_exception",
+          "line_no": 2
+        }
+      ],
+      "seconds": 0.003,
+      "manual_minutes_estimate": 15,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "signal_zero_case_01",
+      "group": "positive",
+      "expected": "SIGNAL_NOT_TRIGGERED",
+      "actual": "SIGNAL_NOT_TRIGGERED",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "signal_idle",
+          "line_no": 1
+        },
+        {
+          "id": "E2",
+          "category": "signal_idle",
+          "line_no": 1
+        },
+        {
+          "id": "E3",
+          "category": "text_idle",
+          "line_no": 4
+        }
+      ],
+      "seconds": 0.003,
+      "manual_minutes_estimate": 30,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "state_case_01",
+      "group": "positive",
+      "expected": "STATE_MACHINE",
+      "actual": "STATE_MACHINE",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "state_transition_failure",
+          "line_no": 2
+        }
+      ],
+      "seconds": 0.002,
+      "manual_minutes_estimate": 20,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "insufficient_evidence_01",
+      "group": "negative",
+      "expected": "UNKNOWN",
+      "actual": "UNKNOWN",
+      "pass": true,
+      "errors": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "category": "first_error",
+          "line_no": 1
+        }
+      ],
+      "seconds": 0.002,
+      "manual_minutes_estimate": 8,
+      "manual_minutes_note": "estimate"
+    },
+    {
+      "case": "normal_case_01",
+      "group": "negative",
+      "expected": "NORMAL",
+      "actual": "NORMAL",
+      "pass": true,
+      "errors": [],
+      "evidence": [],
+      "seconds": 0.002,
+      "manual_minutes_estimate": 5,
+      "manual_minutes_note": "estimate"
+    }
+  ],
+  "results_md": "D:\\carlogDeteor\\tests\\results\\test_result.md",
+  "results_json": "D:\\carlogDeteor\\tests\\results\\test_result.json"
+}

@@ -1,0 +1,7 @@
+{
+  "issue_type": "BINDER_IPC",
+  "must_have_evidence_categories": ["binder_failure", "service_disconnected"],
+  "root_cause_status": "CANDIDATE",
+  "manual_minutes_estimate": 25,
+  "manual_minutes_note": "estimate"
+}

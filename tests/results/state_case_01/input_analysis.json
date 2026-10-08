@@ -1,0 +1,117 @@
+{
+  "issue_type": "STATE_MACHINE",
+  "severity": "HIGH",
+  "summary": "STATE_MACHINE (confidence 0.825). Key evidence: E1. Candidate: State machine hit an undefined or illegal transition.",
+  "classification": {
+    "issue_type": "STATE_MACHINE",
+    "confidence": 0.825,
+    "evidence_ids": [
+      "E1"
+    ],
+    "scores": {
+      "STATE_MACHINE": 4.5
+    },
+    "reason": "Highest category STATE_MACHINE (score=4.50)."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "state_transition_failure",
+      "event_id": 1,
+      "text": "[STATE_ILLEGAL_TRANSITION] [L2] 08-11 16:07:01.100 W/StateMachine(5636): 未定义的状态转换: 当前状态 IDLE -> 预触发 ENTER_PARKING",
+      "why_it_matters": "State machine rejected or recovered from an illegal transition.",
+      "line_no": 2,
+      "timestamp": "08-11 16:07:01.100",
+      "repeat_count": 1,
+      "related_event_ids": [
+        1
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": "08-11 16:07:01.100",
+      "line_no": 2,
+      "event_id": 1,
+      "label": "state_transition_failure: [STATE_ILLEGAL_TRANSITION] [L2] 08-11 16:07:01.100 W/StateMachine(5636): 未定义的状态转换: 当前状态 IDLE -> 预触发 ENTER_PARKING",
+      "evidence_id": "E1"
+    }
+  ],
+  "causal_chain": [],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 1,
+      "before": [
+        "[L1] 08-11 16:07:00.010 D/StateMachine(5636): 添加状态转换: IDLE -> ENTER_PARK_READY -> PARK_READY"
+      ],
+      "after": [
+        "[L3] 08-11 16:07:01.110 W/StateMachine(5636): 非 VPD/VPA，执行 EXIT_PARK",
+        "[L4] 08-11 16:07:01.130 D/StateMachine(5636): handleEvent EXIT_PARK"
+      ]
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "State machine hit an undefined or illegal transition.",
+      "status": "CANDIDATE",
+      "confidence": "HIGH",
+      "evidence_ids": [
+        "E1"
+      ],
+      "reasoning": "Highest category STATE_MACHINE (score=4.50).",
+      "need_verification": [
+        "Replay the (state, event) pair against StateMachine transition table."
+      ],
+      "reason": null,
+      "source": "rule"
+    }
+  ],
+  "confidence": "HIGH",
+  "related_modules": [
+    "statemachine"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Replay the (state, event) pair against StateMachine transition table.",
+      "evidence_ids": [
+        "E1"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": "08-11 16:07:00.010 .. 08-11 16:07:01.130"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\positive\\state_case_01\\input.log",
+    "size_bytes": 419,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 4,
+    "events_total": 4,
+    "processes": {},
+    "time_start": "08-11 16:07:00.010",
+    "time_end": "08-11 16:07:01.130",
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 1,
+    "event_count": 4
+  }
+}

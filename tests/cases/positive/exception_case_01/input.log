@@ -1,0 +1,5 @@
+08-11 16:08:10.010  5636  5636 I AdasKanZiManager: Kanzi session init
+08-11 16:08:10.040  5636  5636 W AdasKanZiManager: java.lang.IllegalStateException: kanzi view not attached
+08-11 16:08:10.040  5636  5636 W AdasKanZiManager: 	at com.chery.ivi.adas.manager.AdasKanZiManager.bindView(AdasKanZiManager.kt:412)
+08-11 16:08:10.040  5636  5636 W AdasKanZiManager: 	at com.chery.ivi.adas.manager.AdasKanZiManager.onResume(AdasKanZiManager.kt:201)
+08-11 16:08:10.055  5636  5636 I AdasKanZiManager: catch and continue, session stays alive

@@ -1,0 +1,9 @@
+{
+  "issue_type": "SIGNAL_NOT_TRIGGERED",
+  "must_have_evidence_categories": ["signal_idle", "text_idle"],
+  "root_cause_status": "CANDIDATE",
+  "focus_signals": ["FcwAcitveSt", "AebAcitveSt"],
+  "question": "16:11 段 Fcw/Aeb 信号为0，对应文言没有触发",
+  "manual_minutes_estimate": 30,
+  "manual_minutes_note": "estimate"
+}

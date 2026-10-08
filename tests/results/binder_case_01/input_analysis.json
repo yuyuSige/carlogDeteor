@@ -1,0 +1,286 @@
+{
+  "issue_type": "BINDER_IPC",
+  "severity": "HIGH",
+  "summary": "BINDER_IPC (confidence 0.97). Key evidence: E1, E2, E3, E4, E5. Candidate: Binder/IPC transaction failed or the remote service died.",
+  "classification": {
+    "issue_type": "BINDER_IPC",
+    "confidence": 0.97,
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "scores": {
+      "EXCEPTION": 3.6750000000000003,
+      "BINDER_IPC": 7.7250000000000005,
+      "MODULE_COMMUNICATION": 3.0
+    },
+    "reason": "Highest category BINDER_IPC (score=7.73)."
+  },
+  "key_evidence": [
+    {
+      "id": "E1",
+      "label": "EVIDENCE",
+      "category": "first_error",
+      "event_id": 2,
+      "text": "[L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
+      "why_it_matters": "First ERROR-level line in the window; often the earliest symptom.",
+      "line_no": 3,
+      "timestamp": "08-11 16:10:01.240",
+      "repeat_count": 1,
+      "related_event_ids": [
+        2
+      ]
+    },
+    {
+      "id": "E2",
+      "label": "EVIDENCE",
+      "category": "binder_failure",
+      "event_id": 2,
+      "text": "[BINDER_DEAD_OBJECT] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "why_it_matters": "Binder/IPC failure between services.",
+      "line_no": 3,
+      "timestamp": "08-11 16:10:01.240",
+      "repeat_count": 2,
+      "related_event_ids": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "E3",
+      "label": "EVIDENCE",
+      "category": "service_disconnected",
+      "event_id": 3,
+      "text": "[SERVICE_DISCONNECTED] [L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+      "why_it_matters": "Service connection dropped.",
+      "line_no": 6,
+      "timestamp": "08-11 16:10:01.251",
+      "repeat_count": 1,
+      "related_event_ids": [
+        3
+      ]
+    },
+    {
+      "id": "E4",
+      "label": "EVIDENCE",
+      "category": "first_exception",
+      "event_id": 2,
+      "text": "[JAVA_EXCEPTION] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "why_it_matters": "First exception / stack-bearing error.",
+      "line_no": 3,
+      "timestamp": "08-11 16:10:01.240",
+      "repeat_count": 2,
+      "related_event_ids": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": "E5",
+      "label": "EVIDENCE",
+      "category": "communication_failure",
+      "event_id": 4,
+      "text": "[BUS_FAILURE] [L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException",
+      "why_it_matters": "Cross-module communication failed.",
+      "line_no": 7,
+      "timestamp": "08-11 16:10:01.260",
+      "repeat_count": 1,
+      "related_event_ids": [
+        4
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "timestamp": "08-11 16:10:01.240",
+      "line_no": 3,
+      "event_id": 2,
+      "label": "first_error: [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
+      "evidence_id": "E1"
+    },
+    {
+      "timestamp": "08-11 16:10:01.240",
+      "line_no": 3,
+      "event_id": 2,
+      "label": "binder_failure: [BINDER_DEAD_OBJECT] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "evidence_id": "E2"
+    },
+    {
+      "timestamp": "08-11 16:10:01.240",
+      "line_no": 3,
+      "event_id": 2,
+      "label": "first_exception: [JAVA_EXCEPTION] [L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException (x2)",
+      "evidence_id": "E4"
+    },
+    {
+      "timestamp": "08-11 16:10:01.251",
+      "line_no": 6,
+      "event_id": 3,
+      "label": "service_disconnected: [SERVICE_DISCONNECTED] [L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+      "evidence_id": "E3"
+    },
+    {
+      "timestamp": "08-11 16:10:01.260",
+      "line_no": 7,
+      "event_id": 4,
+      "label": "communication_failure: [BUS_FAILURE] [L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException",
+      "evidence_id": "E5"
+    }
+  ],
+  "causal_chain": [
+    {
+      "from_evidence": "E1",
+      "to_evidence": "E2",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E2",
+      "to_evidence": "E4",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E4",
+      "to_evidence": "E3",
+      "relation": "precedes"
+    },
+    {
+      "from_evidence": "E3",
+      "to_evidence": "E5",
+      "relation": "precedes"
+    }
+  ],
+  "context_windows": [
+    {
+      "anchor_evidence_id": "E1",
+      "anchor_event_id": 2,
+      "before": [
+        "[L1] 08-11 16:10:01.100 I/AvmSdkService(5636): connection established",
+        "[L2] 08-11 16:10:01.220 D/AvmSdkService(5636): binder transaction begin IAvmSdkService.setMode"
+      ],
+      "after": [
+        "[L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+        "[L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E2",
+      "anchor_event_id": 2,
+      "before": [
+        "[L1] 08-11 16:10:01.100 I/AvmSdkService(5636): connection established",
+        "[L2] 08-11 16:10:01.220 D/AvmSdkService(5636): binder transaction begin IAvmSdkService.setMode"
+      ],
+      "after": [
+        "[L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+        "[L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E3",
+      "anchor_event_id": 3,
+      "before": [
+        "[L1] 08-11 16:10:01.100 I/AvmSdkService(5636): connection established",
+        "[L2] 08-11 16:10:01.220 D/AvmSdkService(5636): binder transaction begin IAvmSdkService.setMode",
+        "[L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException"
+      ],
+      "after": [
+        "[L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E4",
+      "anchor_event_id": 2,
+      "before": [
+        "[L1] 08-11 16:10:01.100 I/AvmSdkService(5636): connection established",
+        "[L2] 08-11 16:10:01.220 D/AvmSdkService(5636): binder transaction begin IAvmSdkService.setMode"
+      ],
+      "after": [
+        "[L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface",
+        "[L7] 08-11 16:10:01.260 E/AvmSdkService(5636): retry failed after DeadObjectException"
+      ]
+    },
+    {
+      "anchor_evidence_id": "E5",
+      "anchor_event_id": 4,
+      "before": [
+        "[L1] 08-11 16:10:01.100 I/AvmSdkService(5636): connection established",
+        "[L2] 08-11 16:10:01.220 D/AvmSdkService(5636): binder transaction begin IAvmSdkService.setMode",
+        "[L3] 08-11 16:10:01.240 E/AvmSdkService(5636): android.os.DeadObjectException",
+        "[L6] 08-11 16:10:01.251 W/AvmWindowManager(5636): onServiceDisconnected: shared surface"
+      ],
+      "after": []
+    }
+  ],
+  "root_causes": [
+    {
+      "title": "Binder/IPC transaction failed or the remote service died.",
+      "status": "CANDIDATE",
+      "confidence": "HIGH",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "reasoning": "Highest category BINDER_IPC (score=7.73).",
+      "need_verification": [
+        "Check the remote service process death and the AIDL interface that failed."
+      ],
+      "reason": null,
+      "source": "rule"
+    }
+  ],
+  "confidence": "HIGH",
+  "related_modules": [
+    "avm"
+  ],
+  "related_processes": [],
+  "related_code": [],
+  "recommendations": [
+    {
+      "text": "Check the remote service process death and the AIDL interface that failed.",
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "priority": 2
+    }
+  ],
+  "unknowns": [
+    "No --source directory: Related Code is empty (optional)."
+  ],
+  "signal_summary": {
+    "structs": {},
+    "constant_fields": [],
+    "changed_fields": {},
+    "focus": [],
+    "text_manager_idle_count": 0,
+    "text_manager_trigger_count": 0,
+    "text_manager_tag": null,
+    "window": "08-11 16:10:01.100 .. 08-11 16:10:01.260"
+  },
+  "meta": {
+    "file": "D:\\carlogDeteor\\tests\\cases\\positive\\binder_case_01\\input.log",
+    "size_bytes": 678,
+    "encoding": "utf-8",
+    "mojibake_repaired": false,
+    "repaired_lines": 0,
+    "total_lines": 7,
+    "events_total": 5,
+    "processes": {},
+    "time_start": "08-11 16:10:01.100",
+    "time_end": "08-11 16:10:01.260",
+    "llm_provider": "rule",
+    "llm_status": "ok",
+    "question": null,
+    "focus_signals": null,
+    "anomaly_count": 4,
+    "event_count": 5
+  }
+}
