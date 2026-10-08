@@ -47,7 +47,13 @@ Root: `D:\carlogDeteor`
 
 ## Commit 记录
 
-开发过程中的重要提交将列在本仓库 `git log`。Phase 1 仅有空仓库；本迭代补齐实现后分批提交。
+`D:\carlogDeteor` `main`（5 commits）:
+
+1. `f88f4f6` Initialize project skeleton, config and LLM-ready environment template.
+2. `7d3bfca` Add log loader, logcat parser, stack merge and tag normalizer.
+3. `9d19c58` Add Evidence First analysis pipeline with pluggable LLM providers.
+4. `ff2c59f` Add golden cases, Skill progressive loading and test runner.
+5. `3289688` Document architecture, midterm status and 1611 signal-zero analysis.
 
 ## 用户确认的输入（2026-10-08）
 
