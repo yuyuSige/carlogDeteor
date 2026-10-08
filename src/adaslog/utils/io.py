@@ -7,6 +7,7 @@ Handles:
 """
 from __future__ import annotations
 
+import codecs
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,6 +92,35 @@ def _looks_double_encoded(lines: list[str], sample: int = 3000) -> bool:
     return checked > 0 and repaired / checked > 0.5
 
 
+def _sample_verdict(raw: bytes, encoding: str) -> str:
+    """Decode a possibly truncated sample.
+
+    Returns:
+      ok              – complete valid text
+      incomplete_tail – only the last character of the sample was cut (not a real error)
+      invalid         – illegal sequence before the tail
+    """
+    if encoding.startswith("utf-16") and len(raw) % 2:
+        raw = raw[:-1]
+    decoder = codecs.getincrementaldecoder(encoding)("strict")
+    try:
+        decoder.decode(raw, final=False)
+    except UnicodeDecodeError:
+        return "invalid"
+    try:
+        decoder.decode(b"", final=True)
+        return "ok"
+    except UnicodeDecodeError as exc:
+        reason = (exc.reason or "").lower()
+        if "unexpected end of data" in reason or "truncated" in reason:
+            return "incomplete_tail"
+        # GBK/UTF-8: error at the last 1–4 bytes of a probe is a cut character, not GBK proof.
+        tail = 4 if encoding.startswith("utf") else 2
+        if exc.start >= max(0, len(raw) - tail):
+            return "incomplete_tail"
+        return "invalid"
+
+
 def detect_encoding(raw_head: bytes) -> str:
     if raw_head.startswith(b"\xff\xfe"):
         return "utf-16-le"
@@ -100,51 +130,73 @@ def detect_encoding(raw_head: bytes) -> str:
         return "utf-8-sig"
     if len(raw_head) >= 4 and raw_head[1:200:2].count(0) > 60:
         return "utf-16-le"
-    try:
-        raw_head.decode("utf-8")
+    utf8 = _sample_verdict(raw_head, "utf-8")
+    if utf8 in ("ok", "incomplete_tail"):
         return "utf-8"
-    except UnicodeDecodeError:
-        pass
-    try:
-        raw_head.decode("gbk")
+    gbk = _sample_verdict(raw_head, "gbk")
+    if gbk in ("ok", "incomplete_tail"):
         return "gbk"
-    except UnicodeDecodeError:
-        return "utf-8"
+    return "utf-8"
 
 
 class LineStream:
-    def __init__(self, path: str | Path, repair: bool | None = None, sample_bytes: int = 2_000_000):
-        import codecs
+    def __init__(
+        self,
+        path: str | Path,
+        repair: bool | None = None,
+        sample_bytes: int = 2_000_000,
+        encoding: str | None = None,
+        chunk_size: int = 64 * 1024,
+    ):
         self.path = Path(path)
         self.repair_opt = repair
         self.sample_bytes = sample_bytes
-        self.encoding = "utf-8"
+        self.encoding = encoding or "utf-8"
+        self.encoding_locked = encoding is not None
+        self.encoding_fallback = None
+        self.incomplete_eof = False
+        self.encoding_errors = 0
         self.mojibake_repaired = False
         self.repaired_lines = 0
         self.total_lines = 0
-        self._codecs = codecs
+        self.chunk_size = chunk_size
 
     def __iter__(self):
         p = self.path
         with p.open("rb") as fh:
             head = fh.read(self.sample_bytes)
-            enc = detect_encoding(head)
-            self.encoding = enc
+            if not self.encoding_locked:
+                self.encoding = detect_encoding(head)
+            enc = self.encoding
             sample_text = head.decode(enc, errors="replace")
             if enc.startswith("utf-16"):
                 sample_text = sample_text.lstrip("\ufeff")
             sample_lines = sample_text.splitlines()
             do_repair = _looks_double_encoded(sample_lines) if self.repair_opt is None else self.repair_opt
             self.mojibake_repaired = bool(do_repair)
-            decoder = self._codecs.getincrementaldecoder(enc)("replace")
-            fh.seek(0)
-            buf = ""
-            line_no = 0
-            repaired = 0
-            first = True
+        try:
+            yield from self._iter_file(enc, do_repair)
+        except UnicodeDecodeError:
+            if self.encoding_locked or not str(enc).startswith("utf-8"):
+                raise
+            self.encoding = "gbk"
+            self.encoding_fallback = "gbk"
+            yield from self._iter_file("gbk", do_repair)
+
+    def _iter_file(self, enc: str, do_repair: bool):
+        decoder = codecs.getincrementaldecoder(enc)("strict")
+        line_no = 0
+        repaired = 0
+        first = True
+        buf = ""
+        with self.path.open("rb") as fh:
             while True:
-                chunk = fh.read(64 * 1024)
-                buf += decoder.decode(chunk, final=not chunk)
+                chunk = fh.read(self.chunk_size)
+                try:
+                    buf += decoder.decode(chunk, final=False)
+                except UnicodeDecodeError:
+                    self.encoding_errors += 1
+                    raise
                 if first and enc.startswith("utf-16"):
                     buf = buf.lstrip("\ufeff")
                     first = False
@@ -161,6 +213,14 @@ class LineStream:
                     yield line_no, raw_line
                 if not chunk:
                     break
+            try:
+                buf += decoder.decode(b"", final=True)
+            except UnicodeDecodeError:
+                # True EOF truncation of the last character: record, then replace that tail only.
+                self.incomplete_eof = True
+                self.encoding_errors += 1
+                decoder2 = codecs.getincrementaldecoder(enc)("replace")
+                # Re-decode leftover is not available; keep buf as already-decoded prefix.
             if buf:
                 line_no += 1
                 raw_line = buf.rstrip("\r")
@@ -168,8 +228,8 @@ class LineStream:
                     raw_line, changed = repair_mojibake_line(raw_line)
                     repaired += int(changed)
                 yield line_no, raw_line
-            self.repaired_lines = repaired
-            self.total_lines = line_no
+        self.repaired_lines = repaired
+        self.total_lines = line_no
 
 
 def iter_log_lines(path: str | Path, repair: bool | None = None, sample_bytes: int = 2_000_000):

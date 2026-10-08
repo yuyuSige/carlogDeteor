@@ -11,6 +11,7 @@ from adaslog.core.errors import LLMProviderError
 from adaslog.llm.prompts import SYSTEM, user_payload
 from adaslog.llm.openai_compat import _parse_json_block, _public_bundle
 from adaslog.llm.provider import LLMProvider, LLMResult
+from adaslog.llm.schema import anthropic_message_text, llm_result_from_parsed
 
 
 class AnthropicProvider(LLMProvider):
@@ -51,14 +52,10 @@ class AnthropicProvider(LLMProvider):
             raise LLMProviderError(f"Anthropic network error: {exc}") from exc
         try:
             body = json.loads(raw_body)
-            text = "".join(p.get("text", "") for p in body.get("content", []) if p.get("type") == "text")
+            text = anthropic_message_text(body)
             parsed = _parse_json_block(text)
+            return llm_result_from_parsed(parsed, provider="anthropic", raw=text)
+        except LLMProviderError:
+            raise
         except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
             raise LLMProviderError(f"Anthropic malformed response: {exc}") from exc
-        return LLMResult(
-            candidates=parsed.get("candidates") or [],
-            unknowns=parsed.get("unknowns") or [],
-            raw=text,
-            provider="anthropic",
-            status="ok",
-        )

@@ -38,11 +38,11 @@ flowchart TB
 
 `run_analysis()` 串联上述阶段。空数据 `data_status=empty|filter_empty` → `UNKNOWN`，不判 `NORMAL`。`issue_type==NORMAL` 时跳过 LLM。仅捕获 `LLMProviderError` 并回退 rule。日志文本作为数据放入 prompt，不当指令。报告 `run_id` 写入文件名。
 
-分类置信度与根因置信度分开：异常得分不能直接推出根因 HIGH。多故障按 pid + 类别 + 60s 间隔拆成 `incidents`，顶层仍保留主问题类型。时序只表示「先于」。
+分类置信度与根因置信度分开：异常得分不能直接推出根因 HIGH。多故障按 pid + 类别 + 60s 间隔拆成 `incidents`，每个故障用自己的证据生成并校验根因，顶层主问题按 PRIORITY 在过阈值类型中选取。时序只表示「先于」。无时间窗为 `full_retain`；有时间窗/PID 为 `filter_early`。
 
 ## LLM Workflow
 
-Prompt 只接收带 id 的 evidence bundle（标注为 LOG DATA）。输出 JSON candidates。Validator 校验结构/枚举、证据编号存在性、证据类型是否支持该结论、以及信号反证；无法验证的自由文本结论保守为 UNKNOWN。
+Prompt 只接收带 id 的 evidence bundle（标注为 LOG DATA）。输出 JSON candidates。Validator 校验结构/枚举、证据编号、证据类型、反证，以及自由文本是否仅为症状复述（不信任模型自报的 claim_type/source）。无法验证的具体根因 → UNKNOWN，并区分缺少支持与存在反证。适配器对 `unknowns`/`candidates`/choices 类型错误抛出 `LLMProviderError`。
 
 切换方式（不改代码）：
 

@@ -67,6 +67,9 @@ def render_text(r: AnalysisReport) -> str:
         lines += ["", "问题列表"]
         for inc in r.incidents:
             lines.append(f"  {inc.id} {L.issue(inc.issue_type)} pid={inc.pid} {inc.summary}")
+            lines.append(f"    证据：{', '.join(inc.evidence_ids) or '（无）'}")
+            for rc in inc.root_causes:
+                lines.append(f"    {L.status(rc.status)}：{rc.title} 引用 {', '.join(rc.evidence_ids) or '无'}")
     if r.counter_evidence:
         lines += ["", "反证 / 变化过程"]
         for c in r.counter_evidence:

@@ -118,6 +118,13 @@ def render_markdown(r: AnalysisReport) -> str:
         lines += ["", "## 问题列表（多故障）", ""]
         for inc in r.incidents:
             lines.append(f"- **{inc.id}** {L.issue(inc.issue_type)} pid={inc.pid} {inc.start_ts}～{inc.end_ts} {inc.summary}")
+            lines.append(f"  证据：{', '.join(inc.evidence_ids) or '（无）'}")
+            for rc in inc.root_causes:
+                lines.append(f"  {L.status(rc.status)}：{rc.title}（引用 {', '.join(rc.evidence_ids) or '无'}）")
+            for u in inc.unknowns:
+                lines.append(f"  未知：{u}")
+            if inc.related_incident_ids:
+                lines.append(f"  关联故障（需有明确关联证据）：{', '.join(inc.related_incident_ids)}")
     if r.counter_evidence:
         lines += ["", "## 反证 / 变化过程", ""]
         for c in r.counter_evidence:

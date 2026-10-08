@@ -41,6 +41,8 @@ Raw log → stream decode → parser → detector → classifier (+ incidents)
 | 多故障按 pid / 模块 / 时间间隔拆分，顶层保留主问题类型 | Implemented |
 | 信号时间线：按字段 `trigger_values` 判断；未知字段不把 0 当成 NO_TEXT | Implemented |
 | 离线规则根因；分类置信度与根因置信度分开；Evidence 校验 | Implemented |
+| 自由文本具体根因：仅症状复述或规则目录可过校验，否则 UNKNOWN | Implemented |
+| 多故障各自证据/根因，不因同类而跨 PID 复用 | Implemented |
 | `LLMProvider`（省略 `--llm` 用配置/环境变量，默认 rule） | Implemented（远端需 .env；超时/非法 JSON 回退 rule） |
 | `--source` 只读代码映射；同名/多 flavor 文件保留歧义 | Implemented |
 | 打包默认配置与规则（`adaslog.resources`），报告写到 cwd | Implemented |
@@ -61,7 +63,7 @@ py -3.11 -m adaslog parse path\to\file.log --stats
 py -3.11 -m adaslog analyze path\to\file.log --format all --out D:\carlogDeteor\tmp\out --no-progress
 ```
 
-`--format all` 写出 md/json/txt；文件名含 `run_id`，避免同名日志、不同时间窗互相覆盖。进度打到 stderr（`--no-progress` 关闭），不会写入 JSON。省略 `--llm` 时用 `config` / `LLM_PROVIDER`，不会被 CLI 强行改成 rule。
+`--format all` 写出 md/json/txt；文件名含 `run_id`，避免同名日志、不同时间窗互相覆盖。进度打到 stderr（`--no-progress` 关闭），不会写入 JSON。省略 `--llm` 时用 `config` / `LLM_PROVIDER`，不会被 CLI 强行改成 rule。编码无法判定时可加 `--encoding utf-8|gbk|utf-16-le`。指定 `--time-range` / `--pid` 时走 `filter_early`（两遍扫描，只物化窗口内事件及触及窗口的堆栈）；全量分析仍驻留全部事件。
 
 针对本地日志（真实样本，不拷进 E02 工程）：
 
@@ -111,9 +113,11 @@ py -3.11 -m adaslog metrics --results D:\carlogDeteor\tmp\latest_results --cases
 
 ## 已知限制
 
-- 全量系统 logcat（如 1611.log，173MB UTF-16）建议加时间窗 / 焦点信号；解析已改为流式解码，但仍会在内存中保留过滤后的事件。时间/PID 过滤在堆栈合并之后。
+- 全量分析（无时间窗/PID）仍按事件数占用内存（`memory_strategy=full_retain`）。指定时间窗/PID 时只保留窗口内行及触及窗口的堆栈，进程映射仍从全文学习。合成日志实测见 `docs/improvement_record.md`；RSS 未测。
+- 编码探测对样本尾部截断的多字节字符按「未读完」处理，不会因此改判 GBK。无法确定时可 `--encoding`。文件末尾真正截断会标记 `incomplete_eof`。
 - 文言映射表只固化了 `signal_text.json` 中的字段；未知字段不能把 0 解释为 NO_TEXT。未见入队日志不能证明未入队。
-- 远端 LLM 仅在 `LLMProviderError`（超时、HTTP、非法 JSON）时回退 rule；程序内部异常会抛出。日志内容按数据分析，不当模型指令。
+- 远端 LLM 仅在 `LLMProviderError`（超时、HTTP、非法 JSON、`unknowns`/`candidates` 类型错误）时回退 rule；程序内部异常会抛出。模型自报的 `source`/`claim_type` 不是可信依据。日志内容按数据分析，不当模型指令。
+- 自由文本提出证据未支持的具体原因（如硬件损坏）→ UNKNOWN / LOW（缺少支持），与「存在反证」分开记录。离线规则症状候选仍保留。
 - `candidate_without_evidence_ids_rate` / `hallucination_rate` 不是根因正确率。黄金集准确率不是生产准确率。
 - 多 flavor 同名源文件会列出候选并标记 `ambiguous`，不会默认第一个文件就是命中。
 - 不写入 `D:\E02_adas`。

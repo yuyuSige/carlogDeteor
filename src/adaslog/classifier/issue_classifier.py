@@ -121,7 +121,17 @@ def classify(
             data_status="ok",
         )
 
-    ranked = sorted(scores.items(), key=lambda kv: (-kv[1], PRIORITY.index(kv[0]) if kv[0] in PRIORITY else 99))
+    qualified = [(t, s) for t, s in scores.items() if s >= min_specific]
+    if qualified:
+        ranked = sorted(
+            qualified,
+            key=lambda kv: (PRIORITY.index(kv[0]) if kv[0] in PRIORITY else 99, -kv[1]),
+        )
+    else:
+        ranked = sorted(
+            scores.items(),
+            key=lambda kv: (-kv[1], PRIORITY.index(kv[0]) if kv[0] in PRIORITY else 99),
+        )
     top_type, top_score = ranked[0]
 
     if top_type == "EXCEPTION" and top_score < min_specific + 1.0:

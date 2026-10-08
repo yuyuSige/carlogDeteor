@@ -7,11 +7,11 @@ from typing import Any, Optional
 
 from adaslog.core.errors import LogLoadError
 from adaslog.models import LogEvent
-from adaslog.parser.logcat import parse_lines
-from adaslog.parser.stacktrace import aggregate_stacktraces
+from adaslog.parser.logcat import parse_line, parse_lines
+from adaslog.parser.stacktrace import aggregate_stacktraces, _is_exception_start, _is_frame
 from adaslog.parser.tag_normalizer import TagNormalizer, RX_PROC_DIED, RX_START_PROC
 from adaslog.utils.io import LineStream
-from adaslog.utils.timeparse import in_clock_range, ms_of_day, parse_clock
+from adaslog.utils.timeparse import in_clock_range, ms_of_day, parse_clock, parse_timestamp
 
 _PROCESS_HINT = ("Start proc ", "Process ", " has died")
 
@@ -53,44 +53,112 @@ def _is_process_map(ev: LogEvent) -> bool:
     return bool(RX_START_PROC.search(msg) or RX_PROC_DIED.search(msg))
 
 
+def _learn_processes_from_text(normalizer: TagNormalizer, text: str) -> None:
+    m = RX_START_PROC.search(text)
+    if m:
+        normalizer.pid_to_process[int(m.group(1))] = m.group(2)
+        return
+    m = RX_PROC_DIED.search(text)
+    if m:
+        normalizer.pid_to_process[int(m.group(2))] = m.group(1)
+
+
+def _filtered_lines(
+    path: Path,
+    start_ms: int | None,
+    end_ms: int | None,
+    pid: int | None,
+    encoding: str | None,
+    normalizer: TagNormalizer,
+) -> tuple[list[tuple[int, str]], LineStream, int, int]:
+    """Pass 1: learn pid map. Pass 2: keep in-window lines and whole stacks that touch the window."""
+    scan = LineStream(path, encoding=encoding)
+    for _line_no, text in scan:
+        _learn_processes_from_text(normalizer, text)
+    scanned = scan.total_lines
+
+    kept_lines: list[tuple[int, str]] = []
+    open_stacks: dict[tuple, list[tuple[int, str, bool, bool]]] = {}
+    untimed = 0
+    unpid = 0
+
+    def flush(key: tuple) -> None:
+        buf = open_stacks.pop(key, None)
+        if not buf:
+            return
+        if any(in_win and pid_ok for *_rest, in_win, pid_ok in buf):
+            for line_no, text, _w, _p in buf:
+                kept_lines.append((line_no, text))
+
+    stream = LineStream(path, encoding=scan.encoding if encoding is None else encoding)
+    if scan.encoding_fallback:
+        stream.encoding_fallback = scan.encoding_fallback
+    for line_no, text in stream:
+        d = parse_line(text) or {}
+        ts = d.get("ts")
+        ts_ms = parse_timestamp(ts) if ts else None
+        in_win = True if start_ms is None else (ts_ms is not None and in_clock_range(ms_of_day(ts_ms), start_ms, end_ms))
+        line_pid = int(d["pid"]) if d.get("pid") is not None else None
+        pid_ok = True if pid is None else (line_pid is not None and line_pid == pid)
+        if start_ms is not None and ts_ms is None:
+            untimed += 1
+        if pid is not None and line_pid is None:
+            unpid += 1
+        msg = d.get("msg") if d else text
+        is_stackish = bool(msg) and (_is_frame(msg) or _is_exception_start(msg))
+        key = None
+        if d.get("pid") is not None:
+            key = (int(d["pid"]), int(d.get("tid") or d["pid"]), (d.get("tag") or "").strip())
+        if is_stackish and key is not None:
+            open_stacks.setdefault(key, []).append((line_no, text, in_win, pid_ok))
+            continue
+        if key is not None:
+            flush(key)
+        if in_win and pid_ok:
+            kept_lines.append((line_no, text))
+    for key in list(open_stacks):
+        flush(key)
+    return kept_lines, stream, untimed, unpid
+
+
 def load_log(
     path: str | Path,
     time_range: str | None = None,
     pid: int | None = None,
     normalizer: TagNormalizer | None = None,
     progress=None,
+    encoding: str | None = None,
 ) -> ParsedLog:
     p = Path(path)
     if not p.exists():
         raise LogLoadError(f"log file not found: {p}")
     start_ms, end_ms, wraps = parse_time_range(time_range)
-
-    stream = LineStream(p)
-    events = parse_lines(stream)
-    if progress:
-        progress(f"decoded {stream.total_lines} lines, parsed {len(events)} events")
-    events = aggregate_stacktraces(events)
     normalizer = normalizer or TagNormalizer()
-    # Learn pid→process from the full stream (including lines later dropped by time/pid filter).
-    normalizer.learn_processes(events)
-
+    filtered = bool(time_range or pid is not None)
     untimed_excluded = 0
     unpid_excluded = 0
-    kept: list[LogEvent] = []
-    for e in events:
-        if time_range:
-            if e.ts_ms is None:
-                untimed_excluded += 1
-                continue
-            if not _in_time_range(e, start_ms, end_ms):
-                continue
-        if pid is not None:
-            if e.pid is None:
-                unpid_excluded += 1
-                continue
-            if e.pid != pid:
-                continue
-        kept.append(e)
+    scanned_lines = 0
+
+    if filtered:
+        numbered, stream, untimed_excluded, unpid_excluded = _filtered_lines(
+            p, start_ms, end_ms, pid, encoding, normalizer,
+        )
+        scanned_lines = stream.total_lines
+        events = parse_lines(numbered)
+        if progress:
+            progress(f"scanned {scanned_lines} lines, kept {len(numbered)} for parse")
+        events = aggregate_stacktraces(events)
+        # pid map already learned in pass 1; do not overwrite with the filtered subset.
+    else:
+        stream = LineStream(p, encoding=encoding)
+        events = parse_lines(stream)
+        scanned_lines = stream.total_lines
+        if progress:
+            progress(f"decoded {stream.total_lines} lines, parsed {len(events)} events")
+        events = aggregate_stacktraces(events)
+        normalizer.learn_processes(events)
+
+    kept = events
 
     for k, e in enumerate(kept):
         e.id = k
@@ -112,9 +180,10 @@ def load_log(
         ev.module = mod
 
     data_status = "ok"
-    if stream.total_lines == 0 or (not kept and not events):
+    scanned = stream.total_lines or scanned_lines
+    if scanned == 0 or (not kept and not filtered):
         data_status = "empty"
-    elif time_range or pid is not None:
+    elif filtered:
         timed = [e for e in kept if e.ts_ms is not None]
         if not kept or (time_range and not timed):
             data_status = "filter_empty"
@@ -126,9 +195,13 @@ def load_log(
         "encoding": stream.encoding,
         "mojibake_repaired": stream.mojibake_repaired,
         "repaired_lines": stream.repaired_lines,
-        "total_lines": stream.total_lines,
+        "total_lines": stream.total_lines or scanned_lines,
+        "lines_scanned": scanned_lines or stream.total_lines,
         "events_total": len(events),
         "events_kept": len(kept),
+        "memory_strategy": "filter_early" if filtered else "full_retain",
+        "encoding_fallback": getattr(stream, "encoding_fallback", None),
+        "incomplete_eof": getattr(stream, "incomplete_eof", False),
         "processes": {str(k): v for k, v in sorted(normalizer.pid_to_process.items())},
         "data_status": data_status,
         "time_wraps_midnight": wraps,
@@ -136,6 +209,7 @@ def load_log(
             "untimed_events": "excluded_when_time_range_set",
             "unpid_events": "excluded_when_pid_set",
             "process_map": "learned_from_full_stream_before_filter",
+            "memory": "filter_early_keeps_in_window_lines_and_touching_stacks" if filtered else "full_retain",
         },
         "untimed_excluded": untimed_excluded,
         "unpid_excluded": unpid_excluded,

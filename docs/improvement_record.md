@@ -136,3 +136,69 @@ py -3.11 -m build --wheel --outdir D:\carlogDeteor\tmp\dist
 py -3.11 -m adaslog analyze tests\cases\negative\empty_log_case_01\input.log --format json --out D:\carlogDeteor\tmp\out --no-progress
 py -3.11 -m adaslog analyze tests\cases\positive\midnight_wrap_case_01\input.log --time-range 23:59:00-00:01:00 --format json --out D:\carlogDeteor\tmp\out --no-progress
 ```
+
+---
+
+## 第二轮（review 复现修复，同日）
+
+未 git commit。基线：53 单测 / 14 场景（上一轮）。本轮结束：83 单测 / 15 场景，结果目录 `tmp/p1p2_verify_results2/`。
+
+### 证据校验（P1）
+
+根因：支持矩阵只比对「证据类别 × 全局分类」，不约束候选声称的原因。  
+修复：不信任模型自报的 `source`/`claim_type`；仅 `provider=rule` 的目录标题可走规则路径；其余自由文本必须是所引证据 + 封闭症状词表的复述，否则 UNKNOWN / LOW，`reject_kind=missing_support`（与 `contradiction` 分开）。无 GPU 黑名单。  
+文件：`llm/validator.py` `models/__init__.py` `tests/unit/test_validator_claim_support.py`
+
+修复前（本轮复现）：SIGNAL_NOT_TRIGGERED + E1 队列为空 +「GPU 硬件永久损坏」→ CANDIDATE/MEDIUM；CRASH + Fatal + 同一断言 → CANDIDATE/HIGH。  
+修复后：两者均为 UNKNOWN/LOW，`缺少支持`。规则「进程崩溃（Fatal…）」仍为 CANDIDATE。
+
+### 多故障串证（P1）
+
+根因：同类 incident 复用全局 `root_causes`。  
+修复：按草稿分组后分别提取证据、分别 `reason`/`validate`；引用必须 ⊆ 该故障证据。全局 `max_key_evidence` 按故障数均分且每组至少 4 条。顶层主问题按 PRIORITY 在过阈值类型中选取（CRASH 优先于 BINDER）。  
+文件：`classifier/incidents.py` `core/pipeline.py` `classifier/issue_classifier.py` `report/markdown.py` `report/text.py` `tests/unit/test_incident_isolation.py` `tests/cases/positive/mixed_type_case_01/`
+
+### 编码采样截断（P1）
+
+根因：2MB 探测样本 `decode("utf-8")` 在字符中间切断 → 误判 GBK。  
+修复：增量解码区分 `incomplete_tail` 与真正非法；探测截断不回退 GBK。`--encoding` 可强制。EOF 真截断记 `incomplete_eof`。  
+文件：`utils/io.py` `parser/loader.py` `cli/main.py` `tests/unit/test_encoding_sample_boundary.py`
+
+### 评估读历史报告（P2）
+
+根因：`next(glob("*_analysis.json"))`。  
+修复：清单记录 `report_path`（相对 results_dir）和 `run_id`；唯一匹配才允许旧清单回退；多份则 `ambiguous_reports`。  
+文件：`testing/runner.py` `testing/metrics.py` `tests/unit/test_metrics_report_path.py`
+
+### 模型 unknowns 类型（P2）
+
+根因：`unknowns: 42` 被适配器接受，管道 `list(unknowns)` 抛 TypeError。  
+修复：OpenAI/Anthropic 共用 `llm/schema.py`，非法结构 → `LLMProviderError` → 既有 fallback。未改成捕获所有 Exception。  
+文件：`llm/schema.py` `llm/openai_compat.py` `llm/anthropic.py` `tests/unit/test_llm_adapter_payload.py`
+
+### 大日志过滤路径
+
+全量：`full_retain`。有时间窗/PID：两遍扫描，只物化窗口内行 + 触及窗口的完整堆栈；进程映射仍从全文学习。
+
+合成数据（同一环境，`tmp/perf_filter.log`，不入库）：5 976 800 字节，70 200 行。
+
+| 路径 | 秒 | events_kept | tracemalloc 峰值 | RSS |
+|---|---|---|---|---|
+| 全量 | 4.318 | 70 200 | 69 896 222 | 未测 |
+| `--time-range 16:11:00-16:11:01` | 3.953 | 200 | 7 534 267 | 未测 |
+
+窗口路径耗时仍接近全量（两遍扫描全文），但 Python 分配峰值约为全量的 1/9。未宣称 RSS 收益。
+
+### 验证
+
+- `pytest tests/unit -q` → 83 passed
+- `adaslog run-tests --results tmp/p1p2_verify_results2` → 15/15
+- wheel `adaslog-0.2.0` 隔离目录：`version 0.2.0`，crash.log → CRASH
+
+### 仍未完成
+
+- 全量分析内存随事件数增长。
+- 过滤路径仍扫描全部行，故墙钟时间下降有限。
+- 未测 OS RSS、未测 173MB 1611.log。
+- 自由文本校验是词表允许集，不是 NLI。
+- 无自动跨进程因果（需明确关联证据才会填 `related_incident_ids`，当前默认空）。

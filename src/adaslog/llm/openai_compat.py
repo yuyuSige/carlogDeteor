@@ -13,6 +13,7 @@ from typing import Any
 from adaslog.core.errors import LLMProviderError
 from adaslog.llm.prompts import SYSTEM, user_payload
 from adaslog.llm.provider import LLMProvider, LLMResult
+from adaslog.llm.schema import llm_result_from_parsed, openai_message_content
 
 
 class OpenAICompatibleProvider(LLMProvider):
@@ -54,17 +55,13 @@ class OpenAICompatibleProvider(LLMProvider):
             raise LLMProviderError(f"OpenAI-compatible network error: {exc}") from exc
         try:
             body = json.loads(raw_body)
-            text = body["choices"][0]["message"]["content"]
+            text = openai_message_content(body)
             parsed = _parse_json_block(text)
+            return llm_result_from_parsed(parsed, provider="openai", raw=text)
+        except LLMProviderError:
+            raise
         except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
             raise LLMProviderError(f"OpenAI-compatible malformed response: {exc}") from exc
-        return LLMResult(
-            candidates=parsed.get("candidates") or [],
-            unknowns=parsed.get("unknowns") or [],
-            raw=text,
-            provider="openai",
-            status="ok",
-        )
 
 
 def _public_bundle(bundle: dict) -> dict:

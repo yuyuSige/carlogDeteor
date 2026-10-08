@@ -1,0 +1,7 @@
+08-11 16:11:00.000  100  100 E AndroidRuntime: FATAL EXCEPTION: main
+08-11 16:11:00.000  100  100 E AndroidRuntime: Process: com.app.one, PID: 100
+08-11 16:11:00.000  100  100 E AndroidRuntime: java.lang.NullPointerException: crash-a
+08-11 16:11:00.000  100  100 E AndroidRuntime: 	at com.chery.ivi.adas.A.foo(A.kt:1)
+08-11 16:11:00.200  200  200 E AvmSdkService: android.os.DeadObjectException
+08-11 16:11:00.200  200  200 E AvmSdkService: 	at android.os.BinderProxy.transactNative(Native Method)
+08-11 16:11:00.210  200  200 W AvmWindowManager: onServiceDisconnected: shared surface

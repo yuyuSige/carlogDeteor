@@ -3,6 +3,7 @@
   "must_have_evidence_categories": ["fatal", "first_exception"],
   "root_cause_status": "CANDIDATE",
   "min_incidents": 2,
+  "incident_root_causes_isolated": true,
   "manual_minutes_estimate": 15,
   "manual_minutes_note": "estimate",
   "sample_kind": "synthetic"

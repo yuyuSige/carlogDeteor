@@ -15,6 +15,25 @@ from pathlib import Path
 from adaslog.core.config import PROJECT_ROOT
 
 
+def _resolve_report(case: dict, results_dir: Path) -> tuple[Path | None, str | None]:
+    recorded = case.get("report_path")
+    if recorded:
+        p = Path(recorded)
+        if not p.is_absolute():
+            p = (results_dir / recorded)
+        p = p.resolve()
+        if p.exists():
+            return p, None
+        return None, "report_missing"
+    case_dir = results_dir / case["case"]
+    matches = sorted(case_dir.glob("*_analysis.json")) if case_dir.exists() else []
+    if not matches:
+        return None, "report_missing"
+    if len(matches) > 1:
+        return None, "ambiguous_reports:" + ",".join(m.name for m in matches)
+    return matches[0].resolve(), None
+
+
 def _prf(tp: int, fp: int, fn: int) -> dict:
     prec = tp / (tp + fp) if (tp + fp) else 0.0
     rec = tp / (tp + fn) if (tp + fn) else 0.0
@@ -55,16 +74,23 @@ def compute_metrics(results_dir: str | Path | None = None, cases_dir: str | Path
     coverage_n = coverage_d = no_id_n = no_id_d = mismatch_n = mismatch_d = 0
     key_tp = key_fp = key_fn = 0
     unlabelled_extra = 0
+    eval_errors: list[dict] = []
+    used_reports: list[dict] = []
     for c in cases:
-        case_dir = results_dir / c["case"]
-        report_path = next(case_dir.glob("*_analysis.json"), None) if case_dir.exists() else None
+        report_path, err = _resolve_report(c, results_dir)
         expected_path = Path(c["expected_path"]) if c.get("expected_path") else (
             default_cases / c.get("group", "positive") / c["case"] / "expected.json"
         )
         exp = json.loads(expected_path.read_text(encoding="utf-8")) if expected_path.exists() else {}
-        if not report_path:
+        if err or report_path is None:
+            eval_errors.append({"case": c.get("case"), "error": err or "report_missing"})
             continue
-        rep = json.loads(report_path.read_text(encoding="utf-8"))
+        used_reports.append({"case": c.get("case"), "report_path": str(report_path), "run_id": c.get("run_id")})
+        try:
+            rep = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            eval_errors.append({"case": c.get("case"), "error": f"report_unreadable:{exc}"})
+            continue
         rcs = rep.get("root_causes") or []
         for rc in rcs:
             no_id_d += 1
@@ -128,6 +154,9 @@ def compute_metrics(results_dir: str | Path | None = None, cases_dir: str | Path
         "n_cases": len(cases),
         "passed": data.get("passed"),
         "failed": data.get("failed"),
+        "results_json": str(path),
+        "evaluation_errors": eval_errors,
+        "used_reports": used_reports,
     }
     (results_dir / "metrics.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     return metrics

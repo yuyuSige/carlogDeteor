@@ -34,7 +34,7 @@ def cmd_version(_: argparse.Namespace) -> int:
 def cmd_parse(args: argparse.Namespace) -> int:
     from adaslog.parser import load_log
 
-    parsed = load_log(args.log, time_range=args.time_range, pid=args.pid)
+    parsed = load_log(args.log, time_range=args.time_range, pid=args.pid, encoding=getattr(args, "encoding", None))
     ev = parsed.events
     print(json.dumps(parsed.meta, ensure_ascii=False, indent=2))
     if args.stats:
@@ -81,6 +81,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         question=args.question,
         config_path=args.config,
         progress=not getattr(args, "no_progress", False),
+        encoding=getattr(args, "encoding", None),
     )
     for path in result["outputs"]:
         print(f"报告: {path}")
@@ -123,6 +124,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("log")
     s.add_argument("--time-range", help="HH:MM:SS-HH:MM:SS (clock of day)")
     s.add_argument("--pid", type=int)
+    s.add_argument("--encoding", help="force log encoding (utf-8, utf-16-le, gbk, ...)")
     s.add_argument("--json", help="write events as JSON to this file")
     s.add_argument("--stats", action="store_true")
     s.add_argument("--show", type=int, default=0, help="print first N events")
@@ -140,6 +142,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--pid", type=int, help="restrict analysis to this pid (system lines are kept)")
     s.add_argument("--question", help="the user's question / symptom, recorded in the report")
     s.add_argument("--config", help="user config JSON merged over config/default.json")
+    s.add_argument("--encoding", help="force log encoding (utf-8, utf-16-le, gbk, ...)")
     s.add_argument("--print", action="store_true", help="print the report to stdout as well")
     s.set_defaults(func=cmd_analyze)
 

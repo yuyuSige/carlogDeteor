@@ -12,13 +12,20 @@ from typing import Any
 from adaslog import __version__
 from adaslog.analyzer.code_analyzer import analyze_code
 from adaslog.classifier import classify
-from adaslog.classifier.incidents import build_incidents
+from adaslog.classifier.incidents import (
+    IncidentDraft,
+    events_for_draft,
+    group_anomalies,
+    to_incident,
+)
 from adaslog.context import analyze_signals, build_context
 from adaslog.core.config import default_output_dir, load_config
 from adaslog.core.errors import LLMProviderError
 from adaslog.detector import detect_anomalies
 from adaslog.extractor import extract_evidence
 from adaslog.llm.provider import get_provider
+from adaslog.llm.rule_based import RuleBasedProvider
+from adaslog.llm.schema import as_unknown_list
 from adaslog.llm.validator import validate_candidates
 from adaslog.models import (
     AnalysisReport,
@@ -46,7 +53,7 @@ _SEVERITY = {
 _BUNDLE_CHAR_BUDGET = 8000
 
 
-def _summary(classification: Classification, evidence, root_causes) -> str:
+def _summary(classification: Classification, evidence, root_causes, incidents=None) -> str:
     if classification.data_status in ("empty", "filter_empty"):
         return "没有足够数据进行分析（空日志或过滤后无带时间戳事件），不能判为正常。"
     if classification.issue_type == "NORMAL":
@@ -56,10 +63,14 @@ def _summary(classification: Classification, evidence, root_causes) -> str:
     ev = "、".join(e.id for e in evidence[:5]) or "无"
     rc = root_causes[0].title if root_causes else "无"
     st = root_causes[0].status if root_causes else "UNKNOWN"
-    return (
+    text = (
         f"{classification.issue_type}（分类置信度 {classification.confidence}）。"
         f"关键证据：{ev}。{st}：{rc}"
     )
+    if incidents and len(incidents) > 1:
+        bits = [f"{inc.id} pid={inc.pid} {inc.issue_type}" for inc in incidents]
+        text += " 问题列表：" + "；".join(bits) + "。顶层为主问题摘要，各故障根因见问题列表。"
+    return text
 
 
 def _unknowns(classification: Classification, evidence, code_hits, source_dir, question, signal_summary) -> list[str]:
@@ -96,6 +107,38 @@ def _run_id(log_path, time_range, focus, question) -> str:
     return f"{stamp}_{short}"
 
 
+def _extract_fair(events, drafts: list[IncidentDraft], signal_summary, max_items: int):
+    if not drafts:
+        return extract_evidence(events, [], signal_summary, max_items=max_items), []
+    n = len(drafts)
+    budget = max(4, max_items // n)
+    evidence = []
+    per: list[list] = []
+    for draft in drafts:
+        local_events = events_for_draft(draft, events) or events
+        sig = signal_summary if draft.issue_type == "SIGNAL_NOT_TRIGGERED" else None
+        part = extract_evidence(local_events, draft.anomalies, sig, max_items=budget)
+        ids = []
+        for e in part:
+            e.id = f"E{len(evidence) + 1}"
+            evidence.append(e)
+            ids.append(e.id)
+        per.append(ids)
+    return evidence, per
+
+
+def _reason_one(provider, bundle, evidence, classification, signal_summary):
+    try:
+        llm_result = provider.reason(bundle)
+        unknowns = as_unknown_list(llm_result.unknowns)
+        cands = validate_candidates(llm_result, evidence, classification, signal_summary)
+        return cands, unknowns, llm_result.status, llm_result.provider, None
+    except LLMProviderError as exc:
+        fallback = RuleBasedProvider().reason(bundle)
+        cands = validate_candidates(fallback, evidence, classification, signal_summary)
+        return cands, [], "fallback", f"{getattr(provider, 'name', 'llm')}->rule", f"{type(exc).__name__}: {exc}"
+
+
 def run_analysis(
     log_path: str | Path,
     source_dir: str | None = None,
@@ -108,6 +151,7 @@ def run_analysis(
     question: str | None = None,
     config_path: str | None = None,
     progress: bool = True,
+    encoding: str | None = None,
 ) -> dict[str, Any]:
     t0 = time.perf_counter()
     timings: dict[str, float] = {}
@@ -119,7 +163,10 @@ def run_analysis(
             print(f"[adaslog] {msg}", file=sys.stderr)
 
     _prog("loading log")
-    parsed = load_log(log_path, time_range=time_range, pid=pid, progress=_prog if progress else None)
+    parsed = load_log(
+        log_path, time_range=time_range, pid=pid,
+        progress=_prog if progress else None, encoding=encoding,
+    )
     timings["load"] = round(time.perf_counter() - t0, 3)
     events = parsed.events
     data_status = parsed.meta.get("data_status", "ok")
@@ -131,7 +178,24 @@ def run_analysis(
     timings["detect_classify"] = round(time.perf_counter() - t1, 3)
 
     max_ev = int(cfg.get("extractor", {}).get("max_key_evidence", 25))
-    evidence = extract_evidence(events, anomalies, signal_summary, max_items=max_ev)
+    drafts = group_anomalies(anomalies, events)
+    if not drafts and classification.issue_type not in ("NORMAL",):
+        ts = [e.timestamp for e in events if e.timestamp]
+        drafts = [
+            IncidentDraft(
+                anomalies=[],
+                pid=events[0].pid if events else None,
+                issue_type=classification.issue_type,
+                event_ids={e.id for e in events},
+                start_ts=ts[0] if ts else None,
+                end_ts=ts[-1] if ts else None,
+            )
+        ]
+    if drafts:
+        evidence, evidence_by_draft = _extract_fair(events, drafts, signal_summary, max_ev)
+    else:
+        evidence = extract_evidence(events, anomalies, signal_summary, max_items=max_ev)
+        evidence_by_draft = []
     classification.evidence_ids = [e.id for e in evidence[:8]]
 
     timeline, causal, windows = build_context(events, evidence, cfg)
@@ -180,25 +244,64 @@ def run_analysis(
     provider_name = "rule"
     llm_unknowns: list[str] = []
     t2 = time.perf_counter()
+    incidents = []
+    candidates = []
     if classification.issue_type == "NORMAL":
-        candidates = []
         provider_name = "none"
     else:
         provider = get_provider(llm_provider, cfg)
         provider_name = provider.name
-        try:
-            llm_result = provider.reason(bundle)
-            llm_status = llm_result.status
-            llm_unknowns = list(llm_result.unknowns or [])
-            candidates = validate_candidates(llm_result, evidence, classification, signal_summary)
-        except LLMProviderError as exc:
-            from adaslog.llm.rule_based import RuleBasedProvider
-
-            llm_result = RuleBasedProvider().reason(bundle)
-            llm_status = "fallback"
-            provider_name = f"{provider_name}->rule"
-            candidates = validate_candidates(llm_result, evidence, classification, signal_summary)
-            parsed.meta["llm_error"] = f"{type(exc).__name__}: {exc}"
+        ev_by_id = {e.id: e for e in evidence}
+        for i, draft in enumerate(drafts):
+            local_ids = evidence_by_draft[i] if i < len(evidence_by_draft) else [e.id for e in evidence]
+            local_ev = [ev_by_id[eid] for eid in local_ids if eid in ev_by_id]
+            local_events = events_for_draft(draft, events) or events
+            local_sig = signal_summary if draft.issue_type == "SIGNAL_NOT_TRIGGERED" else None
+            local_clf = classify(draft.anomalies, local_events, local_sig, cfg, data_status="ok")
+            if draft.anomalies and local_clf.issue_type in ("NORMAL", "UNKNOWN") and draft.issue_type not in ("NORMAL", "UNKNOWN"):
+                local_clf = Classification(
+                    issue_type=draft.issue_type,
+                    confidence=0.55,
+                    evidence_ids=[e.id for e in local_ev],
+                    scores=dict(local_clf.scores or {}),
+                    reason=f"按进程/时间段划分的故障类型 {draft.issue_type}。",
+                    data_status="ok",
+                )
+            elif not draft.anomalies:
+                local_clf = classification
+            local_hits = [
+                h for h in code_hits
+                if set(h.evidence_ids) & {e.id for e in local_ev}
+            ]
+            local_bundle = {
+                **{k: v for k, v in bundle.items() if not str(k).startswith("_")},
+                "issue_type": local_clf.issue_type,
+                "evidence": [
+                    {"id": e.id, "category": e.category, "text": e.text, "line_no": e.line_no, "timestamp": e.timestamp}
+                    for e in local_ev
+                ],
+                "_classification": local_clf,
+                "_evidence": local_ev,
+                "_signal_summary": local_sig,
+                "_code_hits": local_hits,
+            }
+            cands, unks, status, pname, err = _reason_one(
+                provider, local_bundle, local_ev, local_clf, local_sig,
+            )
+            allowed = {e.id for e in local_ev}
+            for rc in cands:
+                rc.evidence_ids = [x for x in rc.evidence_ids if x in allowed]
+            llm_unknowns.extend(unks)
+            llm_status = status
+            provider_name = pname
+            if err:
+                parsed.meta["llm_error"] = err
+            inc_unknowns = []
+            if not local_ev:
+                inc_unknowns.append("该故障没有独立证据（可能被全局截断，或分组内无关键日志）。")
+            incidents.append(to_incident(draft, i + 1, [e.id for e in local_ev], cands, inc_unknowns))
+        primary = next((inc for inc in incidents if inc.issue_type == classification.issue_type), None)
+        candidates = (primary.root_causes if primary else None) or (incidents[0].root_causes if incidents else [])
     timings["reason"] = round(time.perf_counter() - t2, 3)
 
     recs: list[Recommendation] = []
@@ -226,7 +329,6 @@ def run_analysis(
     if classification.issue_type == "NORMAL":
         rc_conf = "HIGH"
 
-    incidents = build_incidents(anomalies, events, classification.issue_type, evidence, candidates)
     counter = [e.text for e in evidence if e.category in ("signal_transition", "text_trigger")]
     run_id = _run_id(log_path, time_range, focus_signals, question)
     timings["total"] = round(time.perf_counter() - t0, 3)
@@ -234,7 +336,7 @@ def run_analysis(
     report = AnalysisReport(
         issue_type=classification.issue_type,
         severity=_SEVERITY.get(classification.issue_type, "MEDIUM"),
-        summary=_summary(classification, evidence, candidates),
+        summary=_summary(classification, evidence, candidates, incidents),
         classification=classification,
         key_evidence=evidence,
         timeline=timeline,

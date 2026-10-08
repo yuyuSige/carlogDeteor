@@ -217,6 +217,7 @@ class Incident:
     summary: str = ""
     root_causes: list[RootCauseCandidate] = field(default_factory=list)
     unknowns: list[str] = field(default_factory=list)
+    related_incident_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -241,6 +242,7 @@ class RootCauseCandidate:
     need_verification: list[str] = field(default_factory=list)
     reason: Optional[str] = None   # for UNKNOWN: e.g. "Insufficient evidence."
     source: str = "rule"           # rule | llm
+    reject_kind: str = ""          # missing_support | contradiction | malformed | ...
 
 
 @dataclass

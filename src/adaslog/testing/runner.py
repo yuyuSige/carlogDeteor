@@ -65,6 +65,13 @@ def _eval_case(report, expected: dict) -> tuple[bool, list[str]]:
         n = len(report.incidents or [])
         if n < int(expected["min_incidents"]):
             errors.append(f"incidents expected >= {expected['min_incidents']} got {n}")
+    if expected.get("incident_root_causes_isolated"):
+        for inc in report.incidents or []:
+            allowed = set(inc.evidence_ids)
+            for rc in inc.root_causes or []:
+                extra = set(rc.evidence_ids) - allowed
+                if extra:
+                    errors.append(f"{inc.id} pid={inc.pid} root-cause cites foreign evidence {sorted(extra)}")
     return not errors, errors
 
 
@@ -96,6 +103,7 @@ def run_cases(
             )
             report = result["report"]
             ok, errors = _eval_case(report, expected)
+            json_out = next((p for p in result.get("outputs") or [] if str(p).endswith(".json")), None)
             actual = {
                 "issue_type": report.issue_type,
                 "confidence": report.confidence,
@@ -106,7 +114,15 @@ def run_cases(
             ok, errors = False, [f"{type(exc).__name__}: {exc}"]
             actual = {}
             report = None
+            json_out = None
         elapsed = round(time.perf_counter() - t0, 3)
+        report_rel = None
+        if json_out:
+            outp = Path(json_out)
+            try:
+                report_rel = str(outp.resolve().relative_to(results_dir.resolve()))
+            except ValueError:
+                report_rel = str(outp)
         rows.append({
             "case": case.name,
             "group": case.parent.name,
@@ -120,6 +136,8 @@ def run_cases(
             "seconds": elapsed,
             "manual_minutes_estimate": expected.get("manual_minutes_estimate"),
             "manual_minutes_note": expected.get("manual_minutes_note", "estimate"),
+            "report_path": report_rel,
+            "run_id": getattr(report, "run_id", None) if report else None,
         })
 
     passed = sum(1 for r in rows if r["pass"])
