@@ -126,14 +126,20 @@ def analyze_code(
                 cands = idx.get(simple + ".kt", []) or idx.get(simple, [])
             if not cands:
                 continue
-            alts = [str(p) for p in cands[1:]]
+            rels = []
+            for pth in cands:
+                try:
+                    rels.append(str(pth.relative_to(root)))
+                except ValueError:
+                    rels.append(str(pth))
+            how = "ambiguous" if len(cands) > 1 else "stack_frame"
             add(
                 cands[0],
                 fr.get("line"),
                 f"{fr.get('class','')}.{fr.get('method','')}",
-                "stack_frame",
+                how,
                 ev_ids,
-                alts,
+                rels[1:],
             )
 
     # 2) tags of key evidence
@@ -144,7 +150,8 @@ def analyze_code(
         for name in ev.extra.get("tag_candidates") or [ev.tag]:
             cands = idx.get(name + ".kt", []) or idx.get(name, [])
             if cands:
-                add(cands[0], None, name, "tag_class", [evd.id], [str(p) for p in cands[1:]])
+                how = "ambiguous" if len(cands) > 1 else "tag_class"
+                add(cands[0], None, name, how, [evd.id], [str(p) for p in cands[1:]])
                 break
 
     return hits

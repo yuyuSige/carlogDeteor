@@ -1,0 +1,3 @@
+08-11 16:11:20.100  1736  1811 D CommonAdapter: notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=0, AebAcitveSt=0}
+08-11 16:11:21.100  1736  1811 D CommonAdapter: notifyCallback() AdasActiveSafetyFcnInfo, msg:AdasActiveSafetyFcnInfo{FcwAcitveSt=2, AebAcitveSt=0}
+08-11 16:11:21.200  5636  5636 D DrivingTextManager: 队列为空且无当前显示，等待新文言触发

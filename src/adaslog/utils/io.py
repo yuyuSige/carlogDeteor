@@ -91,6 +91,93 @@ def _looks_double_encoded(lines: list[str], sample: int = 3000) -> bool:
     return checked > 0 and repaired / checked > 0.5
 
 
+def detect_encoding(raw_head: bytes) -> str:
+    if raw_head.startswith(b"\xff\xfe"):
+        return "utf-16-le"
+    if raw_head.startswith(b"\xfe\xff"):
+        return "utf-16-be"
+    if raw_head.startswith(b"\xef\xbb\xbf"):
+        return "utf-8-sig"
+    if len(raw_head) >= 4 and raw_head[1:200:2].count(0) > 60:
+        return "utf-16-le"
+    try:
+        raw_head.decode("utf-8")
+        return "utf-8"
+    except UnicodeDecodeError:
+        pass
+    try:
+        raw_head.decode("gbk")
+        return "gbk"
+    except UnicodeDecodeError:
+        return "utf-8"
+
+
+class LineStream:
+    def __init__(self, path: str | Path, repair: bool | None = None, sample_bytes: int = 2_000_000):
+        import codecs
+        self.path = Path(path)
+        self.repair_opt = repair
+        self.sample_bytes = sample_bytes
+        self.encoding = "utf-8"
+        self.mojibake_repaired = False
+        self.repaired_lines = 0
+        self.total_lines = 0
+        self._codecs = codecs
+
+    def __iter__(self):
+        p = self.path
+        with p.open("rb") as fh:
+            head = fh.read(self.sample_bytes)
+            enc = detect_encoding(head)
+            self.encoding = enc
+            sample_text = head.decode(enc, errors="replace")
+            if enc.startswith("utf-16"):
+                sample_text = sample_text.lstrip("\ufeff")
+            sample_lines = sample_text.splitlines()
+            do_repair = _looks_double_encoded(sample_lines) if self.repair_opt is None else self.repair_opt
+            self.mojibake_repaired = bool(do_repair)
+            decoder = self._codecs.getincrementaldecoder(enc)("replace")
+            fh.seek(0)
+            buf = ""
+            line_no = 0
+            repaired = 0
+            first = True
+            while True:
+                chunk = fh.read(64 * 1024)
+                buf += decoder.decode(chunk, final=not chunk)
+                if first and enc.startswith("utf-16"):
+                    buf = buf.lstrip("\ufeff")
+                    first = False
+                while True:
+                    nl = buf.find("\n")
+                    if nl < 0:
+                        break
+                    raw_line = buf[:nl].rstrip("\r")
+                    buf = buf[nl + 1:]
+                    line_no += 1
+                    if do_repair:
+                        raw_line, changed = repair_mojibake_line(raw_line)
+                        repaired += int(changed)
+                    yield line_no, raw_line
+                if not chunk:
+                    break
+            if buf:
+                line_no += 1
+                raw_line = buf.rstrip("\r")
+                if do_repair:
+                    raw_line, changed = repair_mojibake_line(raw_line)
+                    repaired += int(changed)
+                yield line_no, raw_line
+            self.repaired_lines = repaired
+            self.total_lines = line_no
+
+
+def iter_log_lines(path: str | Path, repair: bool | None = None, sample_bytes: int = 2_000_000):
+    stream = LineStream(path, repair=repair, sample_bytes=sample_bytes)
+    yield from stream
+    iter_log_lines.last_stream = stream  # type: ignore[attr-defined]
+
+
 def load_text(path: str | Path, repair: bool | None = None) -> LoadedText:
     raw = Path(path).read_bytes()
     text, enc = decode_bytes(raw)

@@ -1,0 +1,9 @@
+{
+  "issue_type": "NORMAL",
+  "focus_signals": ["FcwAcitveSt"],
+  "forbid_root_cause": true,
+  "forbidden_root_cause_substrings": ["保持为 0", "保持为0", "全程空闲"],
+  "manual_minutes_estimate": 8,
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
+}

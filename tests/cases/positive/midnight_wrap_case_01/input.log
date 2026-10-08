@@ -1,0 +1,6 @@
+08-11 16:11:00.000  1  1 I Skip: daytime should drop
+08-11 23:59:30.000  100  100 E AndroidRuntime: FATAL EXCEPTION: main
+08-11 23:59:30.000  100  100 E AndroidRuntime: Process: com.chery.ivi.adas, PID: 100
+08-11 23:59:30.000  100  100 E AndroidRuntime: java.lang.NullPointerException: wrap
+08-11 23:59:30.000  100  100 E AndroidRuntime: 	at com.chery.ivi.adas.manager.avm.AvmViewPresenter.showView(AvmViewPresenter.kt:214)
+08-11 00:00:20.000  100  100 I Keep: after midnight

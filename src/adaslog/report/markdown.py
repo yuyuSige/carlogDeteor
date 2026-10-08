@@ -10,8 +10,11 @@ def render_markdown(r: AnalysisReport) -> str:
         "",
         f"- **问题类型：** {L.issue(r.issue_type)}",
         f"- **严重程度：** {L.severity(r.severity)}",
-        f"- **置信度：** {L.confidence(r.confidence)}（得分={r.classification.confidence}）",
+        f"- **分类置信度：** {L.confidence(r.classification_confidence or r.confidence)}（分类得分={r.classification.confidence}）",
+        f"- **根因置信度：** {L.confidence(r.root_cause_confidence or r.confidence)}（候选≠已确认根因）",
         f"- **推理引擎：** {r.meta.get('llm_status', 'n/a')} / {r.meta.get('llm_provider', 'rule')}",
+        f"- **任务编号：** {r.run_id or r.meta.get('run_id', '')}",
+        f"- **工具版本：** {r.meta.get('tool_version', '')}",
         "",
         "## 1. 问题类型",
         "",
@@ -45,7 +48,7 @@ def render_markdown(r: AnalysisReport) -> str:
     for t in r.timeline:
         lines.append(f"- {t.timestamp or ''} 第{t.line_no}行（{t.evidence_id}）：{t.label}")
     if r.causal_chain:
-        lines += ["", "因果链："]
+        lines += ["", "时序（仅表示先于，不表示因果）："]
         for c in r.causal_chain:
             lines.append(f"- {c.from_evidence} --{L.relation(c.relation)}--> {c.to_evidence}")
     lines += ["", "## 6. 可能根因", ""]
@@ -64,7 +67,12 @@ def render_markdown(r: AnalysisReport) -> str:
             for v in rc.need_verification:
                 lines.append(f"  - {v}")
         lines.append("")
-    lines += ["## 7. 置信度", "", L.confidence(r.confidence), ""]
+    lines += [
+        "## 7. 置信度",
+        "",
+        f"分类 {L.confidence(r.classification_confidence or r.confidence)} / 根因 {L.confidence(r.root_cause_confidence or r.confidence)}",
+        "",
+    ]
     lines += ["## 8. 相关模块", ""]
     lines.append(", ".join(r.related_modules) or "_未知_")
     if r.related_processes:
@@ -106,8 +114,19 @@ def render_markdown(r: AnalysisReport) -> str:
                 lines.append(
                     f"- {p.struct}.{p.field}={p.value} {p.start_ts}～{p.end_ts} 采样{p.samples}次 第{p.first_line}-{p.last_line}行"
                 )
+    if r.incidents:
+        lines += ["", "## 问题列表（多故障）", ""]
+        for inc in r.incidents:
+            lines.append(f"- **{inc.id}** {L.issue(inc.issue_type)} pid={inc.pid} {inc.start_ts}～{inc.end_ts} {inc.summary}")
+    if r.counter_evidence:
+        lines += ["", "## 反证 / 变化过程", ""]
+        for c in r.counter_evidence:
+            lines.append(f"- {c}")
     q = r.meta.get("question")
     if q:
         lines += ["", f"分析问题：{q}"]
-    lines += ["", "---", f"元数据：`{r.meta}`"]
+    filt = r.meta.get("filter_policy")
+    if filt:
+        lines += ["", f"过滤策略：{filt}；覆盖 {r.meta.get('time_start')}～{r.meta.get('time_end')}；data_status={r.meta.get('data_status')}"]
+    lines += ["", "---", "说明：第 4 节为已观察事实/证据；第 6 节为候选原因（Hypothesis），不是已确认根因。", f"元数据：`{r.meta}`"]
     return "\n".join(lines) + "\n"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adaslog"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI-Assisted ADAS Android Log Analysis and Root Cause Diagnosis (Evidence First)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,8 +18,14 @@ rich = ["rich>=13"]
 [project.scripts]
 adaslog = "adaslog.cli.main:main"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+adaslog = ["resources/**/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]

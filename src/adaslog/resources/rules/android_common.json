@@ -1,0 +1,65 @@
+{
+  "rules": [
+    {
+      "id": "fatal_exception",
+      "kind": "FATAL_EXCEPTION",
+      "category": "CRASH",
+      "severity": "CRITICAL",
+      "score": 6.0,
+      "any": ["FATAL EXCEPTION", "Fatal signal", "FATAL EXCEPTION:"],
+      "levels": ["E", "F"]
+    },
+    {
+      "id": "native_tombstone",
+      "kind": "NATIVE_CRASH",
+      "category": "CRASH",
+      "severity": "CRITICAL",
+      "score": 5.5,
+      "any": ["*** *** *** ***", "tombstone", "Fatal signal 11", "Fatal signal 6", "Fatal signal 7"]
+    },
+    {
+      "id": "force_finish",
+      "kind": "FORCE_FINISH",
+      "category": "CRASH",
+      "severity": "HIGH",
+      "score": 2.5,
+      "any": ["Force finishing activity", "has died"]
+    },
+    {
+      "id": "java_exception",
+      "kind": "JAVA_EXCEPTION",
+      "category": "EXCEPTION",
+      "severity": "HIGH",
+      "score": 3.5,
+      "any": ["Exception", "Error:", "NullPointerException", "IllegalStateException",
+              "IllegalArgumentException", "IndexOutOfBounds", "ClassCastException",
+              "KotlinNullPointerException", "UninitializedPropertyAccessException"],
+      "levels": ["E", "F", "W"]
+    },
+    {
+      "id": "anr",
+      "kind": "ANR",
+      "category": "ANR",
+      "severity": "CRITICAL",
+      "score": 6.0,
+      "any": ["ANR in", "Application Not Responding", "Input dispatching timed out",
+              "not responding"]
+    },
+    {
+      "id": "skipped_frames",
+      "kind": "JANK",
+      "category": "PERFORMANCE",
+      "severity": "MEDIUM",
+      "score": 1.5,
+      "any": ["Skipped ", " frames!", "Choreographer", "Slow operation"]
+    },
+    {
+      "id": "system_error",
+      "kind": "SYSTEM_ERROR",
+      "category": "SYSTEM_ERROR",
+      "severity": "HIGH",
+      "score": 2.0,
+      "any": ["Watchdog", "lowmemorykiller", "am_crash", "am_anr", "System server crashed"]
+    }
+  ]
+}

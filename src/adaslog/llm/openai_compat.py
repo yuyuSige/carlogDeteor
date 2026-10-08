@@ -47,13 +47,17 @@ class OpenAICompatibleProvider(LLMProvider):
         )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
+                raw_body = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             raise LLMProviderError(f"OpenAI-compatible HTTP {exc.code}: {exc.reason}") from exc
-        except urllib.error.URLError as exc:
-            raise LLMProviderError(f"OpenAI-compatible network error: {exc.reason}") from exc
-        text = body["choices"][0]["message"]["content"]
-        parsed = _parse_json_block(text)
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise LLMProviderError(f"OpenAI-compatible network error: {exc}") from exc
+        try:
+            body = json.loads(raw_body)
+            text = body["choices"][0]["message"]["content"]
+            parsed = _parse_json_block(text)
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
+            raise LLMProviderError(f"OpenAI-compatible malformed response: {exc}") from exc
         return LLMResult(
             candidates=parsed.get("candidates") or [],
             unknowns=parsed.get("unknowns") or [],
@@ -68,9 +72,14 @@ def _public_bundle(bundle: dict) -> dict:
 
 
 def _parse_json_block(text: str) -> dict:
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("empty model content")
     text = text.strip()
     if text.startswith("```"):
         text = text.strip("`")
         if text.startswith("json"):
-            text = text[4:]
-    return json.loads(text)
+            text = text[4:].lstrip()
+    parsed = json.loads(text)
+    if not isinstance(parsed, dict):
+        raise ValueError("model JSON must be an object")
+    return parsed

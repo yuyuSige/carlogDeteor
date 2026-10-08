@@ -83,10 +83,18 @@ def _is_continuation(line: str) -> bool:
     return bool(RX_STACK_FRAME.match(line) or RX_EXC_HEAD.match(line) or line.startswith((" ", "\t")))
 
 
+def _indexed_lines(lines: Iterable) -> Iterable[tuple[int, str]]:
+    for i, item in enumerate(lines, start=1):
+        if isinstance(item, tuple) and len(item) >= 2:
+            yield int(item[0]), str(item[1])
+        else:
+            yield i, str(item)
+
+
 def parse_lines(lines: Iterable[str], bare_lines_as_events: bool = True) -> list[LogEvent]:
     events: list[LogEvent] = []
     next_id = 0
-    for idx, line in enumerate(lines, start=1):
+    for idx, line in _indexed_lines(lines):
         line = line.rstrip("\r\n")
         if not line.strip():
             continue

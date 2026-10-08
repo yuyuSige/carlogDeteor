@@ -1,4 +1,4 @@
-"""Load a log file into structured LogEvents (loader -> line parser -> stack merge -> tags)."""
+"""Load a log file into structured LogEvents (stream decode -> parse -> filter -> stack merge)."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -9,9 +9,11 @@ from adaslog.core.errors import LogLoadError
 from adaslog.models import LogEvent
 from adaslog.parser.logcat import parse_lines
 from adaslog.parser.stacktrace import aggregate_stacktraces
-from adaslog.parser.tag_normalizer import TagNormalizer
-from adaslog.utils.io import load_text
-from adaslog.utils.timeparse import ms_of_day, parse_clock
+from adaslog.parser.tag_normalizer import TagNormalizer, RX_PROC_DIED, RX_START_PROC
+from adaslog.utils.io import LineStream
+from adaslog.utils.timeparse import in_clock_range, ms_of_day, parse_clock
+
+_PROCESS_HINT = ("Start proc ", "Process ", " has died")
 
 
 @dataclass
@@ -25,15 +27,30 @@ class ParsedLog:
         return self.events[event_id]
 
 
+def parse_time_range(time_range: str | None) -> tuple[int | None, int | None, bool]:
+    """Return (start_ms, end_ms, wraps_midnight)."""
+    if not time_range:
+        return None, None, False
+    parts = time_range.replace("~", "-").split("-")
+    if len(parts) != 2:
+        raise LogLoadError("时间窗格式必须为 HH:MM:SS-HH:MM:SS")
+    start_ms, end_ms = parse_clock(parts[0].strip()), parse_clock(parts[1].strip())
+    if start_ms is None or end_ms is None:
+        raise LogLoadError("时间窗非法：时须为 0-23，分/秒须为 0-59，格式 HH:MM:SS-HH:MM:SS")
+    return start_ms, end_ms, start_ms > end_ms
+
+
 def _in_time_range(ev: LogEvent, start_ms: int | None, end_ms: int | None) -> bool:
-    if ev.ts_ms is None:
+    if start_ms is None:
         return True
-    t = ms_of_day(ev.ts_ms)
-    if start_ms is not None and t < start_ms:
+    if ev.ts_ms is None:
         return False
-    if end_ms is not None and t > end_ms:
-        return False
-    return True
+    return in_clock_range(ms_of_day(ev.ts_ms), start_ms, end_ms)
+
+
+def _is_process_map(ev: LogEvent) -> bool:
+    msg = ev.message or ""
+    return bool(RX_START_PROC.search(msg) or RX_PROC_DIED.search(msg))
 
 
 def load_log(
@@ -41,50 +58,95 @@ def load_log(
     time_range: str | None = None,
     pid: int | None = None,
     normalizer: TagNormalizer | None = None,
+    progress=None,
 ) -> ParsedLog:
     p = Path(path)
     if not p.exists():
         raise LogLoadError(f"log file not found: {p}")
-    if p.suffix.lower() not in (".log", ".txt", "") and p.suffix.lower() not in (".logcat",):
-        # still try, but record a warning
-        pass
-    loaded = load_text(p)
-    lines = loaded.text.split("\n")
-    events = parse_lines(lines)
+    start_ms, end_ms, wraps = parse_time_range(time_range)
+
+    stream = LineStream(p)
+    events = parse_lines(stream)
+    if progress:
+        progress(f"decoded {stream.total_lines} lines, parsed {len(events)} events")
     events = aggregate_stacktraces(events)
     normalizer = normalizer or TagNormalizer()
-    normalizer.apply(events)
+    # Learn pid→process from the full stream (including lines later dropped by time/pid filter).
+    normalizer.learn_processes(events)
 
+    untimed_excluded = 0
+    unpid_excluded = 0
+    kept: list[LogEvent] = []
+    for e in events:
+        if time_range:
+            if e.ts_ms is None:
+                untimed_excluded += 1
+                continue
+            if not _in_time_range(e, start_ms, end_ms):
+                continue
+        if pid is not None:
+            if e.pid is None:
+                unpid_excluded += 1
+                continue
+            if e.pid != pid:
+                continue
+        kept.append(e)
+
+    for k, e in enumerate(kept):
+        e.id = k
+    # Re-apply tags/modules on the kept set using the already-learned pid map.
+    for ev in kept:
+        cands = normalizer.tag_candidates(ev.raw_tag)
+        ev.tag = cands[0] if cands else None
+        if len(cands) > 1:
+            ev.extra["tag_candidates"] = cands
+        if ev.pid is not None and ev.pid in normalizer.pid_to_process:
+            ev.process = normalizer.pid_to_process[ev.pid]
+        mod = normalizer.module_for_tag(ev.tag)
+        if mod is None and ev.extra.get("app_frame"):
+            mod = normalizer.module_for_package(ev.extra["app_frame"]["class"])
+        if mod is None and ev.has_stacktrace:
+            mod = normalizer.module_for_package(" ".join(ev.stacktrace[:6]))
+        if mod is None and ev.process:
+            mod = normalizer.module_for_package(ev.process)
+        ev.module = mod
+
+    data_status = "ok"
+    if stream.total_lines == 0 or (not kept and not events):
+        data_status = "empty"
+    elif time_range or pid is not None:
+        timed = [e for e in kept if e.ts_ms is not None]
+        if not kept or (time_range and not timed):
+            data_status = "filter_empty"
+
+    ts = [e.timestamp for e in kept if e.timestamp]
     meta: dict[str, Any] = {
         "file": str(p),
         "size_bytes": p.stat().st_size,
-        "encoding": loaded.encoding,
-        "mojibake_repaired": loaded.mojibake_repaired,
-        "repaired_lines": loaded.repaired_lines,
-        "total_lines": len(lines),
+        "encoding": stream.encoding,
+        "mojibake_repaired": stream.mojibake_repaired,
+        "repaired_lines": stream.repaired_lines,
+        "total_lines": stream.total_lines,
         "events_total": len(events),
+        "events_kept": len(kept),
         "processes": {str(k): v for k, v in sorted(normalizer.pid_to_process.items())},
+        "data_status": data_status,
+        "time_wraps_midnight": wraps,
+        "filter_policy": {
+            "untimed_events": "excluded_when_time_range_set",
+            "unpid_events": "excluded_when_pid_set",
+            "process_map": "learned_from_full_stream_before_filter",
+        },
+        "untimed_excluded": untimed_excluded,
+        "unpid_excluded": unpid_excluded,
+        "time_start": ts[0] if ts else None,
+        "time_end": ts[-1] if ts else None,
     }
-
-    start_ms = end_ms = None
-    if time_range:
-        parts = time_range.replace("~", "-").split("-")
-        if len(parts) != 2:
-            raise LogLoadError("time range must look like HH:MM:SS-HH:MM:SS")
-        start_ms, end_ms = parse_clock(parts[0]), parse_clock(parts[1])
-        if start_ms is None or end_ms is None:
-            raise LogLoadError("time range must look like HH:MM:SS-HH:MM:SS")
     if time_range or pid is not None:
-        filtered = [
-            e for e in events
-            if _in_time_range(e, start_ms, end_ms) and (pid is None or e.pid == pid or e.pid is None)
-        ]
-        for k, e in enumerate(filtered):
-            e.id = k
-        meta["filter"] = {"time_range": time_range, "pid": pid, "events_after_filter": len(filtered)}
-        events = filtered
-
-    ts = [e.timestamp for e in events if e.timestamp]
-    meta["time_start"] = ts[0] if ts else None
-    meta["time_end"] = ts[-1] if ts else None
-    return ParsedLog(str(p), events, meta, normalizer)
+        meta["filter"] = {
+            "time_range": time_range,
+            "pid": pid,
+            "events_after_filter": len(kept),
+            "wraps_midnight": wraps,
+        }
+    return ParsedLog(str(p), kept, meta, normalizer)

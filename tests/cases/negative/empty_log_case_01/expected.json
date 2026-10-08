@@ -1,0 +1,10 @@
+{
+  "issue_type": "UNKNOWN",
+  "data_status": "empty",
+  "root_cause_status": "UNKNOWN",
+  "must_contain_reason": "没有可分析",
+  "forbid_root_cause": true,
+  "manual_minutes_estimate": 2,
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
+}

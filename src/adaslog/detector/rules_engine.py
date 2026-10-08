@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from adaslog.core.config import RULES_DIR
+from adaslog.core.config import load_json_resource
 from adaslog.core.errors import RuleLoadError
 from adaslog.models import Anomaly, LogEvent
 
@@ -18,16 +18,21 @@ PACK_FILES = [
 
 
 def load_rule_packs(rules_dir: Path | None = None) -> list[dict]:
-    root = rules_dir or RULES_DIR
     rules: list[dict] = []
     for name in PACK_FILES:
-        path = root / name
-        if not path.exists():
-            continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            raise RuleLoadError(f"{path}: {exc}") from exc
+        if rules_dir is not None:
+            path = Path(rules_dir) / name
+            if not path.exists():
+                continue
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise RuleLoadError(f"{path}: {exc}") from exc
+        else:
+            try:
+                data = load_json_resource(f"rules/{name}")
+            except FileNotFoundError:
+                continue
         for rule in data.get("rules", []):
             rule["_pack"] = name
             rules.append(rule)
@@ -93,7 +98,9 @@ def collapse_repeats(anomalies: list[Anomaly], events: list[LogEvent]) -> list[A
     for an in anomalies:
         ev = ev_by_id.get(an.event_id)
         tag = ev.tag if ev else ""
-        key = (an.rule_id, an.matched_text, tag)
+        pid = ev.pid if ev else None
+        bucket = (ev.ts_ms // 30_000) if ev and ev.ts_ms is not None else None
+        key = (an.rule_id, an.matched_text, tag, pid, bucket)
         if key not in by_key:
             by_key[key] = an
             order.append(key)

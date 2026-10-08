@@ -44,13 +44,17 @@ class AnthropicProvider(LLMProvider):
         )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
+                raw_body = resp.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             raise LLMProviderError(f"Anthropic HTTP {exc.code}: {exc.reason}") from exc
-        except urllib.error.URLError as exc:
-            raise LLMProviderError(f"Anthropic network error: {exc.reason}") from exc
-        text = "".join(p.get("text", "") for p in body.get("content", []) if p.get("type") == "text")
-        parsed = _parse_json_block(text)
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise LLMProviderError(f"Anthropic network error: {exc}") from exc
+        try:
+            body = json.loads(raw_body)
+            text = "".join(p.get("text", "") for p in body.get("content", []) if p.get("type") == "text")
+            parsed = _parse_json_block(text)
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
+            raise LLMProviderError(f"Anthropic malformed response: {exc}") from exc
         return LLMResult(
             candidates=parsed.get("candidates") or [],
             unknowns=parsed.get("unknowns") or [],

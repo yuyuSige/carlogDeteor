@@ -132,6 +132,7 @@ class Classification:
     evidence_ids: list[str]
     scores: dict[str, float]
     reason: str
+    data_status: str = "ok"  # ok | empty | filter_empty
 
 
 @dataclass
@@ -172,15 +173,50 @@ class SignalPeriod:
 
 
 @dataclass
+class SignalFieldStatus:
+    """Per-field observation. observation is a closed set of labels, not a root cause."""
+    key: str
+    struct: str
+    field: str
+    observation: str
+    # idle_entire_window | saw_trigger | saw_unmapped_value | not_sampled | unknown_mapping
+    values_seen: list[str] = field(default_factory=list)
+    mapped: bool = False
+    idle_value: Optional[str] = None
+    trigger_values: list[str] = field(default_factory=list)
+    periods: list[SignalPeriod] = field(default_factory=list)
+    note: str = ""
+
+
+@dataclass
 class SignalSummary:
     structs: dict[str, int]                       # struct name -> sample count
     constant_fields: list[SignalPeriod]           # fields that never changed in the window
     changed_fields: dict[str, list[tuple]]        # "Struct.field" -> [(ts, value) transitions]
-    focus: list[SignalPeriod]                     # periods for focused fields
+    focus: list[SignalPeriod]                     # ALL periods for focused fields (including non-zero)
     text_manager_idle_count: int = 0
     text_manager_trigger_count: int = 0
     text_manager_tag: Optional[str] = None
     window: Optional[str] = None
+    field_status: list[SignalFieldStatus] = field(default_factory=list)
+    text_correlation: str = "none"  # idle_seen | trigger_seen | none
+    # Seeing idle logs does not prove a prompt was never queued.
+    enqueue_unobserved_is_unknown: bool = True
+
+
+@dataclass
+class Incident:
+    id: str
+    issue_type: str
+    confidence: float
+    pid: Optional[int]
+    module: Optional[str]
+    start_ts: Optional[str]
+    end_ts: Optional[str]
+    evidence_ids: list[str] = field(default_factory=list)
+    summary: str = ""
+    root_causes: list[RootCauseCandidate] = field(default_factory=list)
+    unknowns: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -233,6 +269,11 @@ class AnalysisReport:
     unknowns: list[str]
     signal_summary: Optional[SignalSummary]
     meta: dict[str, Any]
+    incidents: list[Incident] = field(default_factory=list)
+    classification_confidence: str = ""
+    root_cause_confidence: str = ""
+    run_id: str = ""
+    counter_evidence: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

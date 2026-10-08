@@ -3,5 +3,6 @@
   "must_have_evidence_categories": ["first_exception"],
   "root_cause_status": "CANDIDATE",
   "manual_minutes_estimate": 15,
-  "manual_minutes_note": "estimate"
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
 }

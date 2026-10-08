@@ -11,7 +11,7 @@ import json
 import re
 from pathlib import Path
 
-from adaslog.core.config import RULES_DIR
+from adaslog.core.config import load_json_resource
 from adaslog.models import LogEvent
 
 RX_START_PROC = re.compile(r"Start proc (\d+):([\w.:$]+)/")
@@ -21,8 +21,13 @@ RX_PKG_IN_FRAME = re.compile(r"((?:[a-z][\w]*\.){2,}[a-z_][\w]*)\.[A-Z]\w*")
 
 class TagNormalizer:
     def __init__(self, modules_file: Path | None = None):
-        path = modules_file or (RULES_DIR / "e02_modules.json")
-        data = json.loads(Path(path).read_text(encoding="utf-8")) if Path(path).exists() else {}
+        if modules_file:
+            data = json.loads(Path(modules_file).read_text(encoding="utf-8")) if Path(modules_file).exists() else {}
+        else:
+            try:
+                data = load_json_resource("rules/e02_modules.json")
+            except FileNotFoundError:
+                data = {}
         self.prefixes: list[str] = sorted(data.get("tag_prefixes", []), key=len, reverse=True)
         self.max_len: int = data.get("max_tag_length", 23)
         self.known_tags: list[str] = data.get("known_tags", [])

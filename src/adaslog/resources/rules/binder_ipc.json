@@ -1,0 +1,38 @@
+{
+  "rules": [
+    {
+      "id": "dead_object",
+      "kind": "BINDER_DEAD_OBJECT",
+      "category": "BINDER_IPC",
+      "severity": "HIGH",
+      "score": 4.5,
+      "any": ["DeadObjectException", "dead object", "binderDied", "Binder died"]
+    },
+    {
+      "id": "remote_exception",
+      "kind": "BINDER_REMOTE_EXCEPTION",
+      "category": "BINDER_IPC",
+      "severity": "HIGH",
+      "score": 3.5,
+      "any": ["RemoteException", "TransactionTooLargeException", "binder transaction failed",
+              "Binder transaction failed", "!!! FAILED BINDER TRANSACTION !!!"]
+    },
+    {
+      "id": "service_disconnected",
+      "kind": "SERVICE_DISCONNECTED",
+      "category": "BINDER_IPC",
+      "severity": "HIGH",
+      "score": 3.0,
+      "any": ["onServiceDisconnected", "onServiceDisConnected", "service disconnected",
+              "Service disconnected", "connection lost"]
+    },
+    {
+      "id": "link_to_death",
+      "kind": "BINDER_DEATH_RECIPIENT",
+      "category": "BINDER_IPC",
+      "severity": "MEDIUM",
+      "score": 2.0,
+      "any": ["linkToDeath", "unlinkToDeath", "DeathRecipient"]
+    }
+  ]
+}

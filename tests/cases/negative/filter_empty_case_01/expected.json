@@ -1,0 +1,11 @@
+{
+  "issue_type": "UNKNOWN",
+  "data_status": "filter_empty",
+  "time_range": "10:00:00-10:01:00",
+  "root_cause_status": "UNKNOWN",
+  "forbid_root_cause": true,
+  "must_contain_reason": "过滤",
+  "manual_minutes_estimate": 3,
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
+}

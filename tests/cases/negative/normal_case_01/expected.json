@@ -3,5 +3,6 @@
   "forbid_root_cause": true,
   "must_have_evidence_categories": [],
   "manual_minutes_estimate": 5,
-  "manual_minutes_note": "estimate"
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
 }

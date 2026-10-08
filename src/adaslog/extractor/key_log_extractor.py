@@ -35,8 +35,9 @@ _WHY = {
     "communication_failure": "跨模块通信失败。",
     "anr": "应用无响应（ANR）。",
     "key_warning": "位于因果链上的关键告警。",
-    "signal_idle": "焦点信号保持空闲值 0；Profile 将其映射为 NO_TEXT。",
-    "text_idle": "DrivingTextManager 报告队列为空且无当前显示。",
+    "signal_idle": "已映射焦点信号在该时段为空闲值。",
+    "signal_transition": "信号取值发生变化（含触发值或未映射值），属于反证或过程。",
+    "text_idle": "DrivingTextManager 报告队列为空且无当前显示（不能单独证明未入队）。",
     "text_trigger": "DrivingTextManager 实际入队或显示了文言。",
 }
 
@@ -121,18 +122,40 @@ def extract_evidence(
         used_event_ids.add(an.event_id)
 
     if signal_summary:
-        for period in signal_summary.focus:
+        statuses = list(getattr(signal_summary, "field_status", None) or [])
+        periods_with_obs = []
+        if statuses:
+            for st in statuses:
+                for period in st.periods:
+                    periods_with_obs.append((st, period))
+        else:
+            periods_with_obs = [(None, p) for p in signal_summary.focus]
+        for st, period in periods_with_obs:
             if len(out) >= max_items:
                 break
             ev = next((e for e in events if e.line_no == period.first_line), None)
+            obs = st.observation if st else None
+            mapped = st.mapped if st else False
+            if obs == "saw_trigger":
+                cat = "signal_transition"
+            elif obs == "idle_entire_window" and mapped:
+                cat = "signal_idle"
+            elif obs == "unknown_mapping":
+                cat = "key_warning"
+            elif period.value in ("0", "0.0") and mapped:
+                cat = "signal_idle"
+            else:
+                cat = "signal_transition"
             _add(
                 out,
                 ev,
-                "signal_idle" if period.value in ("0", "0.0") else "key_warning",
+                cat,
                 (
                     f"{period.struct}.{period.field}={period.value}，"
                     f"{period.start_ts} 至 {period.end_ts}"
-                    f"（{period.samples} 次采样，第 {period.first_line}-{period.last_line} 行）"
+                    f"（{period.samples} 次采样，第 {period.first_line}-{period.last_line} 行"
+                    + (f"；观测={obs}" if obs else "")
+                    + "）"
                 ),
             )
         if signal_summary.text_manager_idle_count:
@@ -153,7 +176,7 @@ def extract_evidence(
                 (
                     e for e in events
                     if e.tag == "DrivingTextManager"
-                    and any(k in e.message for k in ("加入队列", "显示文言", "变化: "))
+                    and any(k in e.message for k in ("加入队列", "显示文言"))
                 ),
                 None,
             )

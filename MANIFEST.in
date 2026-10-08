@@ -1,0 +1,3 @@
+recursive-include src/adaslog/resources *.json
+include config/default.json
+recursive-include config/rules *.json

@@ -4,5 +4,6 @@
   "must_contain_reason": "证据不足",
   "forbid_root_cause": false,
   "manual_minutes_estimate": 8,
-  "manual_minutes_note": "estimate"
+  "manual_minutes_note": "estimate",
+  "sample_kind": "synthetic"
 }

@@ -46,7 +46,7 @@ def render_text(r: AnalysisReport) -> str:
             lines.append(f"    原因：{rc.reason}")
         for v in rc.need_verification:
             lines.append(f"    待核实：{v}")
-    lines += ["", "7. 置信度", L.confidence(r.confidence)]
+    lines += ["", "7. 置信度", f"分类 {L.confidence(r.classification_confidence or r.confidence)} / 根因 {L.confidence(r.root_cause_confidence or r.confidence)}"]
     lines += ["", "8. 相关模块", ", ".join(r.related_modules) or "（未知）"]
     lines += ["", "9. 相关代码"]
     if not r.related_code:
@@ -63,4 +63,18 @@ def render_text(r: AnalysisReport) -> str:
         lines.append(f"  - {u}")
     if not r.unknowns:
         lines.append("  （无）")
+    if r.incidents:
+        lines += ["", "问题列表"]
+        for inc in r.incidents:
+            lines.append(f"  {inc.id} {L.issue(inc.issue_type)} pid={inc.pid} {inc.summary}")
+    if r.counter_evidence:
+        lines += ["", "反证 / 变化过程"]
+        for c in r.counter_evidence:
+            lines.append(f"  - {c}")
+    lines += ["", f"任务编号：{r.run_id or r.meta.get('run_id', '')}"]
+    lines += [f"工具版本：{r.meta.get('tool_version', '')}"]
+    filt = r.meta.get("filter_policy")
+    if filt:
+        lines.append(f"过滤策略：{filt}；覆盖 {r.meta.get('time_start')}～{r.meta.get('time_end')}；data_status={r.meta.get('data_status')}")
+    lines.append("第4节为已观察事实；第6节为候选原因，不是已确认根因。时序仅表示先于。")
     return "\n".join(lines) + "\n"

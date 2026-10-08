@@ -80,12 +80,17 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         pid=args.pid,
         question=args.question,
         config_path=args.config,
+        progress=not getattr(args, "no_progress", False),
     )
     for path in result["outputs"]:
         print(f"报告: {path}")
     rep = result["report"]
     from adaslog.report.labels import issue as issue_zh, severity as sev_zh, confidence as conf_zh
-    print(f"问题类型={issue_zh(rep.issue_type)} 严重程度={sev_zh(rep.severity)} 置信度={conf_zh(rep.confidence)}")
+    print(
+        f"问题类型={issue_zh(rep.issue_type)} 严重程度={sev_zh(rep.severity)} "
+        f"分类置信度={conf_zh(rep.classification_confidence or rep.confidence)} "
+        f"根因置信度={conf_zh(rep.root_cause_confidence or rep.confidence)} run_id={rep.run_id}"
+    )
     if args.print:
         print(result["rendered"].get("txt") or result["rendered"].get("md") or "")
     return 0
@@ -102,7 +107,7 @@ def cmd_run_tests(args: argparse.Namespace) -> int:
 def cmd_metrics(args: argparse.Namespace) -> int:
     from adaslog.testing.metrics import compute_metrics
 
-    m = compute_metrics(results_dir=args.results)
+    m = compute_metrics(results_dir=args.results, cases_dir=getattr(args, "cases", None))
     print(json.dumps(m, ensure_ascii=False, indent=2))
     return 0
 
@@ -128,7 +133,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--source", help="source directory (.kt/.java/.xml) for code context, read-only")
     s.add_argument("--format", default="md", choices=["md", "json", "txt", "all"])
     s.add_argument("--out", help="output directory (default: reports/)")
-    s.add_argument("--llm", default="rule", choices=["rule", "openai", "anthropic"], help="LLM provider (default: offline rule engine)")
+    s.add_argument("--llm", default=None, choices=["rule", "openai", "anthropic"], help="LLM provider（省略则用配置/.env，默认 rule）")
+    s.add_argument("--no-progress", action="store_true", help="do not print progress to stderr")
     s.add_argument("--focus-signal", help="comma separated signal field names, e.g. FcwAcitveSt,AebAcitveSt")
     s.add_argument("--time-range", help="HH:MM:SS-HH:MM:SS")
     s.add_argument("--pid", type=int, help="restrict analysis to this pid (system lines are kept)")
@@ -145,6 +151,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("metrics", help="compute metrics from tests/results")
     s.add_argument("--results", default=None)
+    s.add_argument("--cases", default=None, help="golden cases dir used to resolve expected.json")
     s.set_defaults(func=cmd_metrics)
     return p
 

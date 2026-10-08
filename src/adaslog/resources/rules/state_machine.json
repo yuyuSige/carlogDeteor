@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "id": "illegal_transition_zh",
+      "kind": "STATE_ILLEGAL_TRANSITION",
+      "category": "STATE_MACHINE",
+      "severity": "HIGH",
+      "score": 4.5,
+      "any": ["未定义的状态转换", "非法转换", "非法状态", "状态转换失败"]
+    },
+    {
+      "id": "illegal_transition_en",
+      "kind": "STATE_ILLEGAL_TRANSITION",
+      "category": "STATE_MACHINE",
+      "severity": "HIGH",
+      "score": 4.5,
+      "any": ["undefined state transition", "illegal transition", "invalid transition",
+              "state transition failed"]
+    },
+    {
+      "id": "state_ignore_zh",
+      "kind": "STATE_IGNORED_EVENT",
+      "category": "STATE_MACHINE",
+      "severity": "MEDIUM",
+      "score": 2.0,
+      "any": ["忽略本次事件", "忽略事件"]
+    }
+  ]
+}

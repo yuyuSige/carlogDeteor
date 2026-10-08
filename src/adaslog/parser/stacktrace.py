@@ -24,7 +24,13 @@ RX_FRAME_LOC = re.compile(r"at\s+([\w$.<>]+)\.([\w$<>]+)\((\w+\.(?:kt|java)):(\d
 
 
 def _same_stream(a: LogEvent, b: LogEvent) -> bool:
-    return a.pid == b.pid and a.tid == b.tid and (a.raw_tag or "") == (b.raw_tag or "")
+    if a.pid != b.pid or a.tid != b.tid:
+        return False
+    if (a.raw_tag or "") != (b.raw_tag or ""):
+        return False
+    if a.ts_ms is not None and b.ts_ms is not None and abs(b.ts_ms - a.ts_ms) > 2000:
+        return False
+    return True
 
 
 def _is_frame(msg: str) -> bool:

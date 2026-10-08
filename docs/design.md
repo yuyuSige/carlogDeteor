@@ -36,11 +36,13 @@ flowchart TB
 
 ## Pipeline
 
-`run_analysis()` 串联上述阶段。`issue_type==NORMAL` 时跳过 LLM。远端失败回退 rule。
+`run_analysis()` 串联上述阶段。空数据 `data_status=empty|filter_empty` → `UNKNOWN`，不判 `NORMAL`。`issue_type==NORMAL` 时跳过 LLM。仅捕获 `LLMProviderError` 并回退 rule。日志文本作为数据放入 prompt，不当指令。报告 `run_id` 写入文件名。
+
+分类置信度与根因置信度分开：异常得分不能直接推出根因 HIGH。多故障按 pid + 类别 + 60s 间隔拆成 `incidents`，顶层仍保留主问题类型。时序只表示「先于」。
 
 ## LLM Workflow
 
-Prompt 只接收带 id 的 evidence bundle。输出 JSON candidates。Validator 丢掉未知 id 或无证据断言。
+Prompt 只接收带 id 的 evidence bundle（标注为 LOG DATA）。输出 JSON candidates。Validator 校验结构/枚举、证据编号存在性、证据类型是否支持该结论、以及信号反证；无法验证的自由文本结论保守为 UNKNOWN。
 
 切换方式（不改代码）：
 
@@ -65,4 +67,8 @@ Progressive loading：`SKILL.md` → `references/` → `scripts/`（调用同一
 
 ## Testing Architecture
 
-`tests/unit`（pytest）+ `tests/cases/{positive,negative}` + `adaslog run-tests` → `tests/results`.
+`tests/unit`（pytest）+ `tests/cases/{positive,negative}` + `adaslog run-tests --results <dir>`。执行器检查 `forbidden_evidence_categories` 等约束。`metrics.hallucination_rate` = CANDIDATE 无证据编号，不是根因正确率。自定义 `--cases` 必须读该目录的 expected.json。
+
+## Packaged resources
+
+`adaslog.resources` via `importlib.resources`。开发模式（源码树）与 wheel 安装共用同一加载函数；可写输出目录永远是 cwd/reports。
