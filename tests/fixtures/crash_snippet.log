@@ -1,0 +1,14 @@
+--------- beginning of crash
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: FATAL EXCEPTION: main
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: Process: com.chery.ivi.adas, PID: 4577
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: java.lang.NullPointerException: Attempt to invoke virtual method 'void android.view.View.setVisibility(int)' on a null object reference
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at com.chery.ivi.adas.manager.avm.AvmViewPresenter.showView(AvmViewPresenter.kt:214)
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at com.chery.ivi.adas.manager.avm.AvmViewPresenter.onEvent(AvmViewPresenter.kt:98)
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:938)
+08-11 16:09:14.790  4577  4577 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:223)
+08-11 16:09:14.791  4577  4577 E AndroidRuntime: Caused by: java.lang.IllegalStateException: view not attached
+08-11 16:09:14.791  4577  4577 E AndroidRuntime: 	... 4 more
+08-11 16:09:14.797   456  1890 W ActivityTaskManager:   Force finishing activity com.chery.ivi.adas/.MainActivity
+08-11 16:09:14.854   456  1264 I ActivityManager: Process com.chery.ivi.adas (pid 4577) has died: fg  TOP
+08-11 16:09:15.882   456   548 I ActivityManager: Start proc 5636:com.chery.ivi.adas/1000 for service {com.chery.ivi.adas/com.chery.ivi.adas.service.AdasService}
+08-11 16:09:16.100  5636  5636 D IVI_ADAS_APP_StateMachi: 添加状态转换: IDLE -> ENTER_PARK_READY -> PARK_READY
