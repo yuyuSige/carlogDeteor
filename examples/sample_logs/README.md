@@ -1,0 +1,1 @@
+Synthetic slices live in `tests/cases/`. The real 1611.log stays on the desktop (`c:\Users\TS\Desktop\1611.log`) and is not copied into E02_adas. A compact ADAS-only extract may be generated under this folder as `1611_adas_slice.log`.
