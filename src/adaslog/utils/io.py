@@ -139,6 +139,11 @@ def detect_encoding(raw_head: bytes) -> str:
     return "utf-8"
 
 
+def _is_eof_truncation(exc: UnicodeDecodeError) -> bool:
+    reason = (exc.reason or "").lower()
+    return "unexpected end of data" in reason or "truncated" in reason
+
+
 class LineStream:
     def __init__(
         self,
@@ -161,27 +166,74 @@ class LineStream:
         self.total_lines = 0
         self.chunk_size = chunk_size
 
+    def _probe_repair(self, enc: str) -> bool:
+        """Sample-based mojibake decision without committing to a full decode."""
+        with self.path.open("rb") as fh:
+            head = fh.read(self.sample_bytes)
+        sample_text = head.decode(enc, errors="replace")
+        if enc.startswith("utf-16"):
+            sample_text = sample_text.lstrip("\ufeff")
+        sample_lines = sample_text.splitlines()
+        if self.repair_opt is None:
+            return _looks_double_encoded(sample_lines)
+        return bool(self.repair_opt)
+
+    def _validate_encoding(self, enc: str) -> None:
+        """Incremental full-file decode check. Raises UnicodeDecodeError on hard failures.
+
+        EOF truncation of the final character is tolerated (matches _iter_file behaviour).
+        Does not yield lines and does not retain decoded text.
+        """
+        decoder = codecs.getincrementaldecoder(enc)("strict")
+        with self.path.open("rb") as fh:
+            while True:
+                chunk = fh.read(self.chunk_size)
+                decoder.decode(chunk, final=False)
+                if not chunk:
+                    break
+            try:
+                decoder.decode(b"", final=True)
+            except UnicodeDecodeError as exc:
+                if _is_eof_truncation(exc):
+                    return
+                raise
+
+    def _resolve_encoding(self, detected: str) -> str:
+        """Confirm auto-detected encoding before any line is yielded.
+
+        UTF-8 sample hits on ASCII-only prefixes can be wrong when GBK appears later.
+        Pre-validate the whole file so fallback never restarts a generator that already
+        produced output.
+        """
+        if self.encoding_locked:
+            return self.encoding
+        enc = detected
+        if str(enc).startswith("utf-8"):
+            try:
+                self._validate_encoding(enc)
+            except UnicodeDecodeError:
+                try:
+                    self._validate_encoding("gbk")
+                except UnicodeDecodeError:
+                    # Keep UTF-8; _iter_file will surface the error or use replace at EOF.
+                    return enc
+                self.encoding = "gbk"
+                self.encoding_fallback = "gbk"
+                return "gbk"
+        return enc
+
     def __iter__(self):
         p = self.path
         with p.open("rb") as fh:
             head = fh.read(self.sample_bytes)
             if not self.encoding_locked:
                 self.encoding = detect_encoding(head)
-            enc = self.encoding
-            sample_text = head.decode(enc, errors="replace")
-            if enc.startswith("utf-16"):
-                sample_text = sample_text.lstrip("\ufeff")
-            sample_lines = sample_text.splitlines()
-            do_repair = _looks_double_encoded(sample_lines) if self.repair_opt is None else self.repair_opt
-            self.mojibake_repaired = bool(do_repair)
-        try:
-            yield from self._iter_file(enc, do_repair)
-        except UnicodeDecodeError:
-            if self.encoding_locked or not str(enc).startswith("utf-8"):
-                raise
-            self.encoding = "gbk"
-            self.encoding_fallback = "gbk"
-            yield from self._iter_file("gbk", do_repair)
+        enc = self._resolve_encoding(self.encoding)
+        self.encoding = enc
+        do_repair = self._probe_repair(enc)
+        self.mojibake_repaired = bool(do_repair)
+        # Single yield pass only — never restart after emitting lines.
+        yield from self._iter_file(enc, do_repair)
 
     def _iter_file(self, enc: str, do_repair: bool):
         decoder = codecs.getincrementaldecoder(enc)("strict")
