@@ -202,3 +202,82 @@ py -3.11 -m adaslog analyze tests\cases\positive\midnight_wrap_case_01\input.log
 - 未测 OS RSS、未测 173MB 1611.log。
 - 自由文本校验是词表允许集，不是 NLI。
 - 无自动跨进程因果（需明确关联证据才会填 `related_incident_ids`，当前默认空）。
+
+---
+
+## 第三轮（可靠性收尾 + 本地前端 MVP，2026-10-22）
+
+未自动 git commit / push（按任务要求仅给出建议提交信息）。基线：HEAD `af91622`、工作区干净、83 单测 / 15 场景。本轮结束：107 单测 / 15 场景。未修改 `D:\E02_adas`。未调用付费模型。未读取真实密钥。
+
+### 已解决的旧限制（相对第二轮「仍未完成 / 已知问题」）
+
+| 旧限制 / 缺陷 | 本轮状态 |
+|---|---|
+| 编码回退在已输出后重放文件，行重复且行号重置 | **已解决** |
+| 时间/PID 过滤丢掉无前缀堆栈、拖入旧异常、打乱行序 | **已解决** |
+| 信号 + 掉帧等混合故障时顶层根因串用 | **已解决** |
+| 评估对失败运行回退历史报告（`report_path=null`） | **已解决** |
+| 「界面：明确不在范围」 | **本轮新增** Streamlit 本地工作台 |
+| 自由文本「进程没有崩溃」可被词表误接受 | **收紧**：结构化反证 → contradiction；仍非 NLI |
+
+### 问题 1：编码回退重复输出
+
+修复前：ASCII 前缀判 UTF-8，采样后 GBK 中文触发回退，已 yield 的行再从文件头重放（60001 → ~118k 行）。  
+修复后：自动编码在首次 yield 前做增量整文件预验证；失败则选定 GBK 再单次流式输出。元数据行数 = 输出行数。  
+文件：`utils/io.py` `tests/unit/test_encoding_fallback_no_dup.py`
+
+### 问题 2：时间/PID 过滤破坏堆栈与顺序
+
+修复前：无前缀续行被丢掉；同 key 多异常整缓冲导致 16:00 故障进入 16:11 窗；交错输出行序颠倒。  
+修复后：无前缀续行继承所属堆栈过滤结果；新异常头/时间间隔冲刷缓冲；输出按原始行号排序；PID 重用按事件时刻解析进程名。  
+文件：`parser/loader.py` `parser/tag_normalizer.py` `tests/unit/test_filter_stack_order.py`
+
+### 问题 3：混合故障分类与根因不一致
+
+修复前：`focus FcwAcitveSt` + `Skipped 30 frames` → 顶层 SIGNAL，问题列表仅 PERFORMANCE，根因「掉帧」，证据无信号。  
+修复后：映射信号空闲独立成 incident；与 PERFORMANCE/CRASH 并存；顶层根因取对应条目，找不到则 UNKNOWN 而非借用。本地 bundle 的 timeline/context/code 按本条目证据过滤。  
+文件：`classifier/incidents.py` `core/pipeline.py` `tests/unit/test_mixed_signal_incidents.py`
+
+### 交付验证
+
+- `metrics`：`report_path` 字段存在且为 null → `report_unavailable`，不 glob 旧报告；损坏 JSON → `report_unreadable`。
+- 校验：自由文本否定 Fatal 等 → contradiction；规则引擎候选不受影响；不宣称词表=语义验证。
+- CI：保留单测+场景；增加 Windows job、wheel 隔离验证、可选 `ui` job。核心 wheel `Provides-Extra: ui`，不强制 Streamlit。
+- 管道新增可选 `on_stage` 回调，CLI `progress=` 行为兼容。
+
+### 本地前端 MVP
+
+模块：`src/adaslog/ui/{app,session,settings,validation,workspace}.py`  
+安装：`pip install -e ".[ui]"`；启动：`python -m adaslog.ui`（127.0.0.1:8501）。  
+上传上限 200MB；临时目录 `tmp/ui_workbench/<task_id>/`；默认离线规则；会话态防重跑；证据按需读上下文；MD/JSON/TXT 下载绑定当前 run_id。
+
+### 本轮验证结果
+
+```
+pytest tests/unit -q          → 107 passed
+adaslog run-tests             → 15/15
+wheel adaslog-0.2.0           → 隔离目录加载 resources + crash 分析 OK
+Streamlit AppTest             → 上传崩溃日志 / 空文件 / 错误时间窗 / 下载按钮 / 参数变更提示 通过
+Windows runner                → 仅写入 CI，本 Linux 环境未执行（未宣称已通过）
+headed 浏览器手工点击         → 未做（未宣称完整 UI 验收）
+173MB 现场日志性能            → 未测
+```
+
+### 建议 commit 拆分（勿自动提交）
+
+```
+fix(parser): prevent duplicate events during encoding fallback
+fix(parser): preserve stack traces and event order when filtering logs
+fix(analysis): retain signal incidents alongside other anomalies
+fix(metrics): reject historical reports for failed runs
+test(ci): verify Windows execution and installed wheel behavior
+feat(ui): add local log analysis workbench
+```
+
+### 仍未完成
+
+- 全量分析内存随事件数增长；过滤路径仍两遍扫全文。
+- 未测 OS RSS、未测 173MB 1611.log。
+- 自由文本仍非 NLI。
+- 无自动跨进程因果。
+- Windows CI / headed 浏览器需在对应环境执行。

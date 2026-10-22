@@ -12,8 +12,9 @@ license = { text = "Proprietary" }
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=7", "build>=1.0"]
 rich = ["rich>=13"]
+ui = ["streamlit>=1.28"]
 
 [project.scripts]
 adaslog = "adaslog.cli.main:main"

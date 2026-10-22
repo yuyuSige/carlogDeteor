@@ -10,7 +10,7 @@ E02 IVI ADAS 的现场问题几乎都先落在一份混杂的 logcat 上：kerne
 
 ## 项目目标
 
-把「日志输入 → 预处理 → 异常检测 → 分类 → 关键日志 → 上下文 → 可选源码 → 根因候选 → Evidence 校验 → 结构化报告」做成可运行的 CLI + Claude Code Skill。
+把「日志输入 → 预处理 → 异常检测 → 分类 → 关键日志 → 上下文 → 可选源码 → 根因候选 → Evidence 校验 → 结构化报告」做成可运行的 CLI + 本地前端工作台 + Claude Code Skill。
 
 核心不是让模型猜原因，而是 **Evidence First**：没有证据 id 就不能给出确定根因。
 
@@ -27,25 +27,30 @@ Raw log → stream decode → parser → detector → classifier (+ incidents)
         → extractor → context/signals → optional code analyzer (--source, read-only)
         → LLMProvider (default: offline RuleBased; OpenAI/Anthropic optional)
         → Evidence Validator → Markdown / JSON / TXT report (run_id in filename)
+
+CLI (adaslog) 与 本地 Streamlit 工作台 共用同一 pipeline；界面不另写分析逻辑。
 ```
 
 ## 核心功能
 
 | 能力 | 状态 |
 |---|---|
-| 读取 .log/.txt，UTF-16 / GBK / mojibake 修复；流式解码 | Implemented |
+| 读取 .log/.txt/.logcat，UTF-16 / GBK / mojibake 修复；流式解码 | Implemented |
+| 编码自动回退时不重复输出同一原始行 | Implemented |
 | Logcat 多格式 + 同进程堆栈合并 + TAG 归一化 | Implemented |
+| 时间/PID 过滤保留无前缀续行堆栈、独立异常边界、原始行序 | Implemented |
 | 空日志 / 过滤后无事件 → UNKNOWN，与 NORMAL（未发现异常）区分 | Implemented |
 | 跨午夜时间窗 `23:59-00:01`；无时间戳行在设时间窗时排除 | Implemented |
 | 异常检测 / 分类 / 关键日志 / 上下文 | Implemented |
-| 多故障按 pid / 模块 / 时间间隔拆分，顶层保留主问题类型 | Implemented |
+| 多故障按 pid / 模块 / 时间间隔拆分；信号空闲可独立成问题条目 | Implemented |
 | 信号时间线：按字段 `trigger_values` 判断；未知字段不把 0 当成 NO_TEXT | Implemented |
 | 离线规则根因；分类置信度与根因置信度分开；Evidence 校验 | Implemented |
-| 自由文本具体根因：仅症状复述或规则目录可过校验，否则 UNKNOWN | Implemented |
-| 多故障各自证据/根因，不因同类而跨 PID 复用 | Implemented |
+| 自由文本：词表复述 + 结构化反证；不能验证则 UNKNOWN（非语义 NLI） | Implemented |
+| 多故障各自证据/根因，顶层不借用无关故障根因 | Implemented |
 | `LLMProvider`（省略 `--llm` 用配置/环境变量，默认 rule） | Implemented（远端需 .env；超时/非法 JSON 回退 rule） |
 | `--source` 只读代码映射；同名/多 flavor 文件保留歧义 | Implemented |
 | 打包默认配置与规则（`adaslog.resources`），报告写到 cwd | Implemented |
+| 本地 Streamlit 工作台（可选依赖 `adaslog[ui]`） | Implemented |
 | Skill 渐进加载 | Implemented |
 | RAG / 多 Agent Harness | Planned |
 
@@ -54,6 +59,8 @@ Issue types: CRASH, EXCEPTION, BINDER_IPC, STATE_MACHINE, MODULE_COMMUNICATION, 
 根因候选是 Hypothesis，不是已确认根因。有证据编号不等于结论正确。时序只表示「先于」，不表示因果。
 
 ## 使用方式 / 运行方式
+
+### CLI（核心，无 Streamlit 依赖）
 
 ```bat
 cd /d D:\carlogDeteor
@@ -73,7 +80,29 @@ py -3.11 -m adaslog analyze c:\Users\TS\Desktop\1611.log --time-range 16:11:00-1
 py -3.11 -m adaslog analyze c:\Users\TS\Desktop\1540.log --time-range 15:41:26-15:41:27 --focus-signal ParkingQuitInd --question "不显示暂停超时，泊车功能退出" --format all --out D:\carlogDeteor\reports
 ```
 
-LLM：先用自带规则引擎。要换模型时复制 `.env.example` 为 `.env`，填 `OPENAI_API_KEY` / `OPENAI_BASE_URL` 或 `ANTHROPIC_API_KEY`，再加 `--llm openai` 或 `--llm anthropic`。源码不写死 Key。
+LLM：默认离线规则引擎。要换模型时复制 `.env.example` 为 `.env`，填 `OPENAI_API_KEY` / `OPENAI_BASE_URL` 或 `ANTHROPIC_API_KEY`，再加 `--llm openai` 或 `--llm anthropic`。源码不写死 Key。前端默认只用离线规则，不提供模型供应商设置界面。
+
+### 本地前端工作台（可选）
+
+```bat
+cd /d D:\carlogDeteor
+py -3.11 -m pip install -e ".[ui]"
+py -3.11 -m adaslog.ui
+```
+
+或：
+
+```bat
+py -3.11 -m streamlit run src\adaslog\ui\app.py --server.address 127.0.0.1
+```
+
+- 默认绑定 `127.0.0.1:8501`，中文界面。
+- 支持上传 `.log` / `.txt` / `.logcat`；上传上限 **200 MB**（覆盖约 173MB 现场日志），界面明示。
+- 临时文件：`tmp/ui_workbench/<task_id>/`（独立任务目录；文件名经安全化，不能决定任意磁盘路径）。旧任务会自动清理（保留最近约 30 个）。也可手动删除整个 `tmp/ui_workbench`。
+- 默认离线规则分析；不在界面读取或展示 `.env` / 密钥。
+- 仅点击「开始分析」才执行；切换页签、展开证据、下载报告不会重跑管道。参数变化会提示结果属于上一次任务。
+
+数据保留：任务目录与导出报告保存在本机工作区；项目不上传云端。`tmp/` 已在 `.gitignore` 中。
 
 ## 测试方式
 
@@ -83,13 +112,22 @@ py -3.11 -m adaslog run-tests --results D:\carlogDeteor\tmp\latest_results
 py -3.11 -m adaslog metrics --results D:\carlogDeteor\tmp\latest_results --cases D:\carlogDeteor\tests\cases
 ```
 
-黄金用例在 `tests/cases/{positive,negative}`，全部标注 `sample_kind=synthetic`，不是生产准确率。自定义 `--cases` 时评估会读取该目录下的 `expected.json`。CI：`.github/workflows/ci.yml`。
+可选 UI 依赖下的 AppTest：
+
+```bat
+py -3.11 -m pip install -e ".[dev,ui]"
+py -3.11 -m pytest tests\unit\test_ui_validation_and_session.py -q
+```
+
+黄金用例在 `tests/cases/{positive,negative}`，全部标注 `sample_kind=synthetic`，不是生产准确率。自定义 `--cases` 时评估会读取该目录下的 `expected.json`。CI：`.github/workflows/ci.yml`（Ubuntu 单测+场景+wheel 隔离验证；Windows 环境检查；可选 UI job）。
 
 ## 效果指标
 
 见 `tmp/latest_results/metrics.json`（或你指定的 `--results`）。人工耗时均为 **估算值并已标注 estimate**。
 
 `hallucination_rate` / `candidate_without_evidence_ids_rate` 只统计「CANDIDATE 但没有任何证据编号」，**不能**解读为根因正确。结论对错看 `claim_mismatch_rate` 与用例里的 `forbidden_root_cause_substrings`。提取精确率只在 `must_have` / `forbidden` 标注范围内计算，未标注的多余证据记为 `unlabelled_extra_categories`。
+
+失败运行的清单若 `report_path=null`，评估记为不可评估，不会回退到历史 JSON。
 
 ## Skill 使用方式
 
@@ -103,7 +141,7 @@ py -3.11 -m adaslog metrics --results D:\carlogDeteor\tmp\latest_results --cases
 
 ## 项目目录
 
-见 `docs/design.md`。本轮改动说明见 `docs/improvement_record.md`。规范要求的 `README.md` / `proposal.md` / `midterm.md` / `src/` / `tests/` / `docs/` / `skills/` / `skills-creator/fix-log.md` 均在本根下。
+见 `docs/design.md`。本轮改动说明见 `docs/improvement_record.md`。规范要求的 `README.md` / `proposal.md` / `midterm.md` / `src/` / `tests/` / `docs/` / `skills/` / `skills-creator/form-log.md` 均在本根下。
 
 ## 安装与资源
 
@@ -111,15 +149,20 @@ py -3.11 -m adaslog metrics --results D:\carlogDeteor\tmp\latest_results --cases
 
 空日志或时间过滤后无事件 → `UNKNOWN`（数据不足），与「窗口内有日志且未发现异常」的 `NORMAL` 不同。跨午夜时间窗（如 `23:59:00-00:01:00`）按时钟环绕处理。报告文件名含 `run_id`，避免同名日志不同时间窗互相覆盖。
 
+前端为可选依赖：`pip install 'adaslog[ui]'`。核心 CLI / wheel **不**强制安装 Streamlit。
+
 ## 已知限制
 
 - 全量分析（无时间窗/PID）仍按事件数占用内存（`memory_strategy=full_retain`）。指定时间窗/PID 时只保留窗口内行及触及窗口的堆栈，进程映射仍从全文学习。合成日志实测见 `docs/improvement_record.md`；RSS 未测。
-- 编码探测对样本尾部截断的多字节字符按「未读完」处理，不会因此改判 GBK。无法确定时可 `--encoding`。文件末尾真正截断会标记 `incomplete_eof`。
+- 编码探测对样本尾部截断的多字节字符按「未读完」处理；自动回退前会预验证整文件解码，避免重复输出。无法确定时可 `--encoding`。文件末尾真正截断会标记 `incomplete_eof`。
 - 文言映射表只固化了 `signal_text.json` 中的字段；未知字段不能把 0 解释为 NO_TEXT。未见入队日志不能证明未入队。
 - 远端 LLM 仅在 `LLMProviderError`（超时、HTTP、非法 JSON、`unknowns`/`candidates` 类型错误）时回退 rule；程序内部异常会抛出。模型自报的 `source`/`claim_type` 不是可信依据。日志内容按数据分析，不当模型指令。
-- 自由文本提出证据未支持的具体原因（如硬件损坏）→ UNKNOWN / LOW（缺少支持），与「存在反证」分开记录。离线规则症状候选仍保留。
+- 自由文本校验是封闭词表 + 结构化反证，**不是**完整 NLI / 语义验证。
 - `candidate_without_evidence_ids_rate` / `hallucination_rate` 不是根因正确率。黄金集准确率不是生产准确率。
 - 多 flavor 同名源文件会列出候选并标记 `ambiguous`，不会默认第一个文件就是命中。
+- 前端 AppTest 覆盖上传/校验/分析/下载/参数变更提示；**未**在本环境做真实 headed 浏览器点击验收。
+- Windows CI job 已写入 workflow；本 Linux 开发环境未实际执行 Windows runner。
+- 未对 173MB `1611.log` 做本轮耗时/内存测量。
 - 不写入 `D:\E02_adas`。
 
 ## 后续计划
