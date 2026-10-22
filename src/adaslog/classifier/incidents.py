@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from adaslog.models import Anomaly, Evidence, Incident, LogEvent, RootCauseCandidate
+from adaslog.models import Anomaly, Evidence, Incident, LogEvent, RootCauseCandidate, SignalSummary
 
 GAP_MS = 60_000
 SPAN_SLACK_MS = 2_000
@@ -20,6 +20,92 @@ class IncidentDraft:
     start_ms: int | None = None
     end_ms: int | None = None
     module: str | None = None
+
+
+def signal_idle_draft(signal_summary: SignalSummary | None, events: list[LogEvent]) -> IncidentDraft | None:
+    """Independent SIGNAL_NOT_TRIGGERED draft when mapped focus fields stay idle.
+
+    Signal findings must not depend on the anomalies list being empty; they coexist
+    with PERFORMANCE / CRASH / etc. as separate incident entries.
+    """
+    if signal_summary is None or not signal_summary.field_status:
+        return None
+    if any(s.observation == "saw_trigger" for s in signal_summary.field_status):
+        return None
+    idle = [s for s in signal_summary.field_status if s.mapped and s.observation == "idle_entire_window"]
+    if not idle:
+        return None
+    line_nos: set[int] = set()
+    pids: list[int] = []
+    start_ts = end_ts = None
+    start_ms = end_ms = None
+    for st in idle:
+        for period in st.periods:
+            line_nos.add(period.first_line)
+            line_nos.add(period.last_line)
+            if period.pid is not None:
+                pids.append(period.pid)
+            if period.start_ts and (start_ts is None or period.start_ts < start_ts):
+                start_ts = period.start_ts
+            if period.end_ts and (end_ts is None or period.end_ts > end_ts):
+                end_ts = period.end_ts
+    by_line = {e.line_no: e for e in events}
+    event_ids: set[int] = set()
+    for ln in line_nos:
+        ev = by_line.get(ln)
+        if ev is not None:
+            event_ids.add(ev.id)
+        else:
+            # Include events whose line falls inside any idle period span.
+            for st in idle:
+                for period in st.periods:
+                    if period.first_line <= ln <= period.last_line:
+                        for e in events:
+                            if period.first_line <= e.line_no <= period.last_line:
+                                event_ids.add(e.id)
+    if not event_ids:
+        for st in idle:
+            for period in st.periods:
+                for e in events:
+                    if period.first_line <= e.line_no <= period.last_line:
+                        event_ids.add(e.id)
+                        if e.pid is not None:
+                            pids.append(e.pid)
+    # Also include DrivingTextManager idle lines when present (shared signal context).
+    for e in events:
+        if e.tag == "DrivingTextManager" and "队列为空" in (e.message or ""):
+            event_ids.add(e.id)
+            if e.pid is not None:
+                pids.append(e.pid)
+    related = [e for e in events if e.id in event_ids]
+    if related:
+        start_ms = next((e.ts_ms for e in related if e.ts_ms is not None), None)
+        end_ms = next((e.ts_ms for e in reversed(related) if e.ts_ms is not None), None)
+        if start_ts is None:
+            start_ts = next((e.timestamp for e in related if e.timestamp), None)
+        if end_ts is None:
+            end_ts = next((e.timestamp for e in reversed(related) if e.timestamp), None)
+    return IncidentDraft(
+        anomalies=[],
+        pid=pids[0] if pids else (related[0].pid if related else None),
+        issue_type="SIGNAL_NOT_TRIGGERED",
+        event_ids=event_ids,
+        start_ts=start_ts,
+        end_ts=end_ts,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        module=next((e.module for e in related if e.module), None),
+    )
+
+
+def merge_signal_draft(drafts: list[IncidentDraft], signal_summary: SignalSummary | None, events: list[LogEvent]) -> list[IncidentDraft]:
+    """Ensure a mapped idle signal becomes its own incident alongside other anomalies."""
+    sig = signal_idle_draft(signal_summary, events)
+    if sig is None:
+        return drafts
+    if any(d.issue_type == "SIGNAL_NOT_TRIGGERED" for d in drafts):
+        return drafts
+    return list(drafts) + [sig]
 
 
 def group_anomalies(anomalies: list[Anomaly], events: list[LogEvent]) -> list[IncidentDraft]:

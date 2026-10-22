@@ -7,7 +7,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from adaslog import __version__
 from adaslog.analyzer.code_analyzer import analyze_code
@@ -16,6 +16,7 @@ from adaslog.classifier.incidents import (
     IncidentDraft,
     events_for_draft,
     group_anomalies,
+    merge_signal_draft,
     to_incident,
 )
 from adaslog.context import analyze_signals, build_context
@@ -31,6 +32,7 @@ from adaslog.models import (
     AnalysisReport,
     Classification,
     Recommendation,
+    RootCauseCandidate,
 )
 from adaslog.parser import load_log
 from adaslog.report import render_report, write_reports
@@ -152,17 +154,31 @@ def run_analysis(
     config_path: str | None = None,
     progress: bool = True,
     encoding: str | None = None,
+    on_stage: Callable[[str, str], None] | None = None,
 ) -> dict[str, Any]:
+    """Run the analysis pipeline.
+
+    ``progress`` keeps the existing CLI stderr behaviour.
+    ``on_stage(stage, message)`` is an optional UI/host callback; stages are
+    ``load`` / ``extract`` / ``analyze`` / ``report`` (plus ``done``).
+    """
     t0 = time.perf_counter()
     timings: dict[str, float] = {}
     cfg = load_config(config_path)
     formats = formats or [cfg.get("report", {}).get("default_format", "md")]
 
-    def _prog(msg: str) -> None:
+    def _stage(stage: str, msg: str) -> None:
+        if on_stage is not None:
+            on_stage(stage, msg)
         if progress:
             print(f"[adaslog] {msg}", file=sys.stderr)
 
-    _prog("loading log")
+    def _prog(msg: str) -> None:
+        # Used by load_log line counters; stay on the current stage.
+        if progress:
+            print(f"[adaslog] {msg}", file=sys.stderr)
+
+    _stage("load", "读取日志")
     parsed = load_log(
         log_path, time_range=time_range, pid=pid,
         progress=_prog if progress else None, encoding=encoding,
@@ -177,8 +193,10 @@ def run_analysis(
     classification = classify(anomalies, events, signal_summary, cfg, data_status=data_status)
     timings["detect_classify"] = round(time.perf_counter() - t1, 3)
 
+    _stage("extract", "提取证据")
     max_ev = int(cfg.get("extractor", {}).get("max_key_evidence", 25))
     drafts = group_anomalies(anomalies, events)
+    drafts = merge_signal_draft(drafts, signal_summary, events)
     if not drafts and classification.issue_type not in ("NORMAL",):
         ts = [e.timestamp for e in events if e.timestamp]
         drafts = [
@@ -244,6 +262,7 @@ def run_analysis(
     provider_name = "rule"
     llm_unknowns: list[str] = []
     t2 = time.perf_counter()
+    _stage("analyze", "分析问题")
     incidents = []
     candidates = []
     if classification.issue_type == "NORMAL":
@@ -268,18 +287,70 @@ def run_analysis(
                     data_status="ok",
                 )
             elif not draft.anomalies:
-                local_clf = classification
+                # Signal (or other anomaly-less) drafts: keep the draft's own type, not the global primary.
+                if draft.issue_type == "SIGNAL_NOT_TRIGGERED" and local_sig is not None:
+                    local_clf = classify([], local_events, local_sig, cfg, data_status="ok")
+                    if local_clf.issue_type != "SIGNAL_NOT_TRIGGERED":
+                        local_clf = Classification(
+                            issue_type="SIGNAL_NOT_TRIGGERED",
+                            confidence=0.7,
+                            evidence_ids=[e.id for e in local_ev],
+                            scores={"SIGNAL_NOT_TRIGGERED": 4.0},
+                            reason="已映射焦点信号在窗口内保持空闲值。",
+                            data_status="ok",
+                        )
+                else:
+                    local_clf = Classification(
+                        issue_type=draft.issue_type,
+                        confidence=classification.confidence if draft.issue_type == classification.issue_type else 0.55,
+                        evidence_ids=[e.id for e in local_ev],
+                        scores=dict(classification.scores or {}),
+                        reason=f"独立问题条目：{draft.issue_type}。",
+                        data_status="ok",
+                    )
             local_hits = [
                 h for h in code_hits
                 if set(h.evidence_ids) & {e.id for e in local_ev}
             ]
+            allowed = {e.id for e in local_ev}
+            local_timeline = [
+                t for t in bundle["timeline"]
+                if t.get("evidence_id") in allowed
+            ]
+            local_windows = [
+                w for w in ctx_payload
+                if w.get("anchor") in allowed
+            ]
+            local_code = [
+                {
+                    "file": h.file, "line": h.line, "symbol": h.symbol,
+                    "how_found": h.how_found, "candidates": h.candidates[:6],
+                    "snippet": _trim(h.snippet, 800),
+                }
+                for h in local_hits
+            ]
+            local_signal_status = (
+                [
+                    {"key": s.key, "observation": s.observation, "values": s.values_seen, "mapped": s.mapped, "note": s.note}
+                    for s in (local_sig.field_status or [])
+                ]
+                if local_sig is not None
+                else []
+            )
             local_bundle = {
-                **{k: v for k, v in bundle.items() if not str(k).startswith("_")},
                 "issue_type": local_clf.issue_type,
+                "classification_reason": local_clf.reason,
+                "classification_confidence": local_clf.confidence,
+                "data_status": local_clf.data_status,
+                "question": question if draft.issue_type == classification.issue_type else None,
                 "evidence": [
                     {"id": e.id, "category": e.category, "text": e.text, "line_no": e.line_no, "timestamp": e.timestamp}
                     for e in local_ev
                 ],
+                "timeline": local_timeline,
+                "context_windows": local_windows,
+                "code_hits": local_code,
+                "signal_field_status": local_signal_status,
                 "_classification": local_clf,
                 "_evidence": local_ev,
                 "_signal_summary": local_sig,
@@ -288,7 +359,6 @@ def run_analysis(
             cands, unks, status, pname, err = _reason_one(
                 provider, local_bundle, local_ev, local_clf, local_sig,
             )
-            allowed = {e.id for e in local_ev}
             for rc in cands:
                 rc.evidence_ids = [x for x in rc.evidence_ids if x in allowed]
             llm_unknowns.extend(unks)
@@ -301,7 +371,28 @@ def run_analysis(
                 inc_unknowns.append("该故障没有独立证据（可能被全局截断，或分组内无关键日志）。")
             incidents.append(to_incident(draft, i + 1, [e.id for e in local_ev], cands, inc_unknowns))
         primary = next((inc for inc in incidents if inc.issue_type == classification.issue_type), None)
-        candidates = (primary.root_causes if primary else None) or (incidents[0].root_causes if incidents else [])
+        if primary is not None:
+            candidates = list(primary.root_causes)
+        elif not incidents:
+            candidates = []
+        else:
+            # Do not borrow an unrelated incident's root cause for the top-level type.
+            candidates = [
+                RootCauseCandidate(
+                    title="UNKNOWN",
+                    status="UNKNOWN",
+                    confidence="LOW",
+                    evidence_ids=[],
+                    reasoning=(
+                        f"顶层分类为 {classification.issue_type}，但问题列表中没有对应条目的可支持根因；"
+                        "请查看各问题条目各自的候选原因，勿将其他故障的根因当作本分类结论。"
+                    ),
+                    reason="顶层分类与问题条目不一致，缺少对应该分类的独立支持。",
+                    need_verification=["核对问题列表中各类别是否各自成立，避免串用根因。"],
+                    source="rule",
+                    reject_kind="missing_support",
+                )
+            ]
     timings["reason"] = round(time.perf_counter() - t2, 3)
 
     recs: list[Recommendation] = []
@@ -377,11 +468,12 @@ def run_analysis(
         counter_evidence=counter,
     )
 
+    _stage("report", "生成报告")
     dest = Path(out_dir) if out_dir else default_output_dir()
     stem = Path(log_path).stem + f"_{run_id}_analysis"
     rendered = {fmt: render_report(report, fmt) for fmt in formats}
     written = write_reports(report, dest, formats, stem=stem)
-    _prog(f"done issue_type={report.issue_type} run_id={run_id}")
+    _stage("done", f"完成 issue_type={report.issue_type} run_id={run_id}")
     return {
         "report": report,
         "outputs": [str(p) for p in written.values()],
