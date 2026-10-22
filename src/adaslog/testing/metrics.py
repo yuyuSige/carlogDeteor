@@ -16,15 +16,25 @@ from adaslog.core.config import PROJECT_ROOT
 
 
 def _resolve_report(case: dict, results_dir: Path) -> tuple[Path | None, str | None]:
-    recorded = case.get("report_path")
-    if recorded:
+    """Resolve the JSON report for one case listing entry.
+
+    Distinguishes:
+      - field absent → legacy glob fallback (old manifests)
+      - field present and null/"" → this run produced no report (failed/unevaluable)
+      - field present with path → use that path only
+    """
+    if "report_path" in case:
+        recorded = case.get("report_path")
+        if recorded is None or recorded == "":
+            return None, "report_unavailable"
         p = Path(recorded)
         if not p.is_absolute():
-            p = (results_dir / recorded)
+            p = results_dir / recorded
         p = p.resolve()
         if p.exists():
             return p, None
         return None, "report_missing"
+    # Legacy manifests without report_path: only safe when exactly one match.
     case_dir = results_dir / case["case"]
     matches = sorted(case_dir.glob("*_analysis.json")) if case_dir.exists() else []
     if not matches:
