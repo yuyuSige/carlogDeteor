@@ -124,6 +124,29 @@ def test_valid_ids_but_wrong_category_missing_support():
     assert out[0].reject_kind == "missing_support"
 
 
+def test_negated_crash_claim_on_fatal_is_contradiction_not_candidate():
+    """Free text '进程没有崩溃' must not pass lexicon allowlist against Fatal evidence."""
+    evidence = [_ev("E1", "fatal", "FATAL EXCEPTION: main java.lang.NullPointerException")]
+    clf = Classification(issue_type="CRASH", confidence=0.95, evidence_ids=["E1"], scores={}, reason="crash")
+    out = validate_candidates(
+        LLMResult(
+            candidates=[{
+                "title": "进程没有崩溃",
+                "status": "CANDIDATE",
+                "confidence": "MEDIUM",
+                "evidence_ids": ["E1"],
+                "reasoning": "日志显示进程没有崩溃",
+            }],
+            provider="openai",
+        ),
+        evidence,
+        clf,
+    )
+    assert out[0].status == "UNKNOWN"
+    assert out[0].confidence == "LOW"
+    assert out[0].reject_kind == "contradiction"
+
+
 def test_contradiction_reason_distinct_from_missing_support():
     from adaslog.models import SignalFieldStatus, SignalSummary
 

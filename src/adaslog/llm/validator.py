@@ -158,11 +158,41 @@ def _is_trusted_rule(result: LLMResult) -> bool:
     return name in _RULE_PROVIDERS or name.endswith("->rule")
 
 
+# Structured negation vs evidence categories — not an expanded semantic lexicon / NLI.
+_NEGATE_CRASH = re.compile(
+    r"(没有|未|不|无|并非|不是).{0,8}(崩溃|异常|fatal|crash|abort|退出|died)",
+    re.IGNORECASE,
+)
+_NEGATE_SIGNAL_IDLE = re.compile(
+    r"(已经|已).{0,6}(触发|入队|显示)|不是.{0,6}(空闲|未触发)",
+    re.IGNORECASE,
+)
+_CRASH_EVIDENCE = {"fatal", "crash", "first_exception"}
+_IDLE_EVIDENCE = {"signal_idle", "text_idle"}
+
+
+def _free_text_contradicts_evidence(title: str, reasoning: str, cited: list[Evidence]) -> bool:
+    """Reject free-text claims that negate structured facts in the cited evidence.
+
+    This is category-bound pattern matching, not semantic entailment. Unverifiable
+    free text still falls through to missing_support via the allowlist check.
+    """
+    blob = f"{title} {reasoning}"
+    cats = {e.category for e in cited}
+    if cats & _CRASH_EVIDENCE and _NEGATE_CRASH.search(blob):
+        return True
+    if cats & _IDLE_EVIDENCE and _NEGATE_SIGNAL_IDLE.search(blob):
+        return True
+    return False
+
+
 def _claim_is_symptom_restatement(title: str, reasoning: str, cited: list[Evidence], itype: str) -> bool:
     """Title/reasoning tokens must be covered by cited evidence text + closed symptom lexicon.
 
     Extra entities (hardware, unrelated modules, invented defects) remain as leftovers
     and are treated as unverifiable specific causes. This is an allowlist, not a brand denylist.
+    Lexicon size is intentionally fixed; free text that cannot be checked this way is not
+    described as semantically verified.
     """
     allowed = set(_FUNCTION_LEXICON)
     allowed |= {_t.lower() for _t in _SYMPTOM_LEXICON.get(itype, set())}
@@ -223,12 +253,22 @@ def validate_candidates(
 
         if not trusted_rule:
             # Ignore model-reported source/claim_type. Only evidence-bound restatement is CANDIDATE.
+            if _free_text_contradicts_evidence(item["title"], item["reasoning"], cited):
+                out.append(
+                    _unknown(
+                        result,
+                        valid_ids,
+                        "自由文本与所引证据的结构化事实矛盾（例如 Fatal 证据下声称进程没有崩溃）。",
+                        "contradiction",
+                    )
+                )
+                continue
             if not _claim_is_symptom_restatement(item["title"], item["reasoning"], cited, itype):
                 out.append(
                     _unknown(
                         result,
                         valid_ids,
-                        "自由文本提出了所引证据未支持的具体原因；仅能确认症状，不能确认该根因。",
+                        "自由文本提出了所引证据未支持的具体原因；仅能确认症状，不能确认该根因。未经验证内容不作语义通过。",
                         "missing_support",
                     )
                 )

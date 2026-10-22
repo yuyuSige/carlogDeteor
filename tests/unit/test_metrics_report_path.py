@@ -82,6 +82,83 @@ def test_metrics_missing_report_is_error(tmp_path):
     assert m["evaluation_errors"][0]["error"] == "report_missing"
 
 
+def test_explicit_null_report_path_not_legacy_fallback(tmp_path):
+    """report_path=null means this run has no report — do not pick an older JSON."""
+    results = tmp_path / "results"
+    case = results / "crash_case"
+    _write_report(case / "old_success_analysis.json", ["fatal"])
+    expected = tmp_path / "cases" / "positive" / "crash_case" / "expected.json"
+    expected.parent.mkdir(parents=True)
+    expected.write_text(json.dumps({
+        "issue_type": "CRASH",
+        "must_have_evidence_categories": ["fatal"],
+        "sample_kind": "synthetic",
+    }), encoding="utf-8")
+    (results / "test_result.json").write_text(json.dumps({
+        "passed": 0, "failed": 1, "cases_dir": str(tmp_path / "cases"),
+        "cases": [{
+            "case": "crash_case", "group": "positive", "pass": False,
+            "expected": "CRASH", "actual": None,
+            "expected_path": str(expected),
+            "report_path": None,
+            "run_id": None,
+            "sample_kind": "synthetic",
+            "errors": ["RuntimeError: boom"],
+        }],
+    }), encoding="utf-8")
+    m = compute_metrics(results_dir=results, cases_dir=tmp_path / "cases")
+    assert m["evaluation_errors"]
+    assert m["evaluation_errors"][0]["error"] == "report_unavailable"
+    assert not m["used_reports"]
+
+
+def test_success_then_failed_rerun_does_not_reuse_old_report(tmp_path):
+    """After a green run, a failed re-run with report_path=null must be unevaluable."""
+    results = tmp_path / "results"
+    case = results / "crash_case"
+    _write_report(case / "first_ok_analysis.json", ["fatal"])
+    expected = tmp_path / "e.json"
+    expected.write_text(json.dumps({
+        "issue_type": "CRASH",
+        "must_have_evidence_categories": ["fatal"],
+    }), encoding="utf-8")
+    # Simulate second run overwriting the listing only.
+    (results / "test_result.json").write_text(json.dumps({
+        "cases": [{
+            "case": "crash_case", "group": "positive",
+            "expected": "CRASH", "actual": None, "pass": False,
+            "expected_path": str(expected),
+            "report_path": None,
+            "run_id": None,
+            "errors": ["LogLoadError: missing"],
+        }],
+    }), encoding="utf-8")
+    m = compute_metrics(results_dir=results)
+    assert m["evaluation_errors"][0]["error"] == "report_unavailable"
+    assert m["used_reports"] == []
+
+
+def test_corrupt_report_is_unevaluable(tmp_path):
+    results = tmp_path / "results"
+    case = results / "crash_case"
+    case.mkdir(parents=True)
+    bad = case / "broken_analysis.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    expected = tmp_path / "e.json"
+    expected.write_text("{}", encoding="utf-8")
+    (results / "test_result.json").write_text(json.dumps({
+        "cases": [{
+            "case": "crash_case", "group": "positive",
+            "expected": "CRASH", "actual": "CRASH", "pass": True,
+            "expected_path": str(expected),
+            "report_path": "crash_case/broken_analysis.json",
+        }],
+    }), encoding="utf-8")
+    m = compute_metrics(results_dir=results)
+    assert m["evaluation_errors"]
+    assert m["evaluation_errors"][0]["error"].startswith("report_unreadable")
+
+
 def test_runner_records_report_path_and_rerun(tmp_path, cases_dir):
     out1 = tmp_path / "r1"
     s1 = run_cases(cases_dir=cases_dir / "positive" if False else cases_dir, results_dir=out1)
