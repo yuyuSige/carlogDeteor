@@ -7,13 +7,15 @@ from typing import Any, Optional
 
 from adaslog.core.errors import LogLoadError
 from adaslog.models import LogEvent
-from adaslog.parser.logcat import parse_line, parse_lines
+from adaslog.parser.logcat import parse_line, parse_lines, _is_continuation
 from adaslog.parser.stacktrace import aggregate_stacktraces, _is_exception_start, _is_frame
 from adaslog.parser.tag_normalizer import TagNormalizer, RX_PROC_DIED, RX_START_PROC
 from adaslog.utils.io import LineStream
 from adaslog.utils.timeparse import in_clock_range, ms_of_day, parse_clock, parse_timestamp
 
 _PROCESS_HINT = ("Start proc ", "Process ", " has died")
+# Align with stacktrace._same_stream time bound.
+_STACK_GAP_MS = 2000
 
 
 @dataclass
@@ -53,14 +55,18 @@ def _is_process_map(ev: LogEvent) -> bool:
     return bool(RX_START_PROC.search(msg) or RX_PROC_DIED.search(msg))
 
 
-def _learn_processes_from_text(normalizer: TagNormalizer, text: str) -> None:
+def _learn_processes_from_text(normalizer: TagNormalizer, text: str, line_no: int = 0) -> None:
+    d = parse_line(text) or {}
+    ts_ms = parse_timestamp(d["ts"]) if d.get("ts") else None
     m = RX_START_PROC.search(text)
     if m:
-        normalizer.pid_to_process[int(m.group(1))] = m.group(2)
+        normalizer.record_start_proc(int(m.group(1)), m.group(2), ts_ms, line_no)
         return
     m = RX_PROC_DIED.search(text)
     if m:
-        normalizer.pid_to_process[int(m.group(2))] = m.group(1)
+        pid = int(m.group(2))
+        if pid not in normalizer.pid_to_process:
+            normalizer.record_start_proc(pid, m.group(1), ts_ms, line_no)
 
 
 def _filtered_lines(
@@ -71,53 +77,113 @@ def _filtered_lines(
     encoding: str | None,
     normalizer: TagNormalizer,
 ) -> tuple[list[tuple[int, str]], LineStream, int, int]:
-    """Pass 1: learn pid map. Pass 2: keep in-window lines and whole stacks that touch the window."""
+    """Pass 1: learn pid map. Pass 2: keep in-window lines and whole stacks that touch the window.
+
+    Unprefixed continuation lines inherit the open stack's filter result.
+    A new exception head / time gap / pid-tid-tag change closes the previous stack buffer
+    so unrelated older faults are not pulled into a later window.
+    Output lines are sorted by original line number.
+    """
     scan = LineStream(path, encoding=encoding)
-    for _line_no, text in scan:
-        _learn_processes_from_text(normalizer, text)
+    for line_no, text in scan:
+        _learn_processes_from_text(normalizer, text, line_no)
     scanned = scan.total_lines
 
     kept_lines: list[tuple[int, str]] = []
-    open_stacks: dict[tuple, list[tuple[int, str, bool, bool]]] = {}
+    # key -> list of (line_no, text, in_win, pid_ok, ts_ms)
+    open_stacks: dict[tuple, list[tuple[int, str, bool, bool, int | None]]] = {}
+    # Bare (unprefixed) continuations inherit from the last opened stack context.
+    bare_ctx: tuple[tuple, bool, bool] | None = None
     untimed = 0
     unpid = 0
 
     def flush(key: tuple) -> None:
+        nonlocal bare_ctx
         buf = open_stacks.pop(key, None)
         if not buf:
             return
-        if any(in_win and pid_ok for *_rest, in_win, pid_ok in buf):
-            for line_no, text, _w, _p in buf:
+        if any(in_win and pid_ok for *_rest, in_win, pid_ok, _ts in buf):
+            for line_no, text, _w, _p, _ts in buf:
                 kept_lines.append((line_no, text))
+        if bare_ctx is not None and bare_ctx[0] == key:
+            bare_ctx = None
+
+    def stack_key(d: dict) -> tuple | None:
+        if d.get("pid") is None:
+            return None
+        return (int(d["pid"]), int(d.get("tid") or d["pid"]), (d.get("tag") or "").strip())
 
     stream = LineStream(path, encoding=scan.encoding if encoding is None else encoding)
     if scan.encoding_fallback:
         stream.encoding_fallback = scan.encoding_fallback
     for line_no, text in stream:
-        d = parse_line(text) or {}
+        parsed = parse_line(text)
+        d = parsed or {}
         ts = d.get("ts")
         ts_ms = parse_timestamp(ts) if ts else None
-        in_win = True if start_ms is None else (ts_ms is not None and in_clock_range(ms_of_day(ts_ms), start_ms, end_ms))
+        in_win = True if start_ms is None else (
+            ts_ms is not None and in_clock_range(ms_of_day(ts_ms), start_ms, end_ms)
+        )
         line_pid = int(d["pid"]) if d.get("pid") is not None else None
         pid_ok = True if pid is None else (line_pid is not None and line_pid == pid)
-        if start_ms is not None and ts_ms is None:
+        if start_ms is not None and parsed is not None and ts_ms is None:
+            # Prefixed line without usable timestamp under a time window.
+            # Bare continuations inherit via the open stack and are not counted here.
             untimed += 1
-        if pid is not None and line_pid is None:
+        if pid is not None and parsed is not None and line_pid is None:
             unpid += 1
-        msg = d.get("msg") if d else text
-        is_stackish = bool(msg) and (_is_frame(msg) or _is_exception_start(msg))
-        key = None
-        if d.get("pid") is not None:
-            key = (int(d["pid"]), int(d.get("tid") or d["pid"]), (d.get("tag") or "").strip())
-        if is_stackish and key is not None:
-            open_stacks.setdefault(key, []).append((line_no, text, in_win, pid_ok))
+
+        msg = d.get("msg") if parsed is not None else text
+        # Unprefixed lines: attach to open stack when they look like frames/continuations;
+        # otherwise exclude under a time window (counted as untimed).
+        if parsed is None:
+            looks_cont = bool(text.strip()) and (
+                _is_frame(text) or _is_exception_start(text) or _is_continuation(text)
+            )
+            if looks_cont and bare_ctx is not None:
+                key, b_win, b_pid = bare_ctx
+                open_stacks.setdefault(key, []).append((line_no, text, b_win, b_pid, None))
+            elif start_ms is not None:
+                untimed += 1
             continue
+
+        key = stack_key(d)
+        is_exc_start = bool(msg) and _is_exception_start(msg)
+        is_frame = bool(msg) and _is_frame(msg)
+        is_stackish = is_exc_start or is_frame
+
+        if is_stackish and key is not None:
+            buf = open_stacks.get(key)
+            if buf:
+                # New exception head closes the previous independent fault.
+                if is_exc_start:
+                    flush(key)
+                    buf = None
+                else:
+                    prev_ts = buf[-1][4]
+                    if (
+                        ts_ms is not None
+                        and prev_ts is not None
+                        and abs(ts_ms - prev_ts) > _STACK_GAP_MS
+                    ):
+                        flush(key)
+                        buf = None
+            open_stacks.setdefault(key, []).append((line_no, text, in_win, pid_ok, ts_ms))
+            bare_ctx = (key, in_win, pid_ok)
+            continue
+
+        # Non-stack prefixed line: close this stream's open stack, then maybe keep the line.
         if key is not None:
             flush(key)
+        # Prefixed non-stack lines end bare-continuation inheritance.
+        bare_ctx = None
         if in_win and pid_ok:
             kept_lines.append((line_no, text))
+
     for key in list(open_stacks):
         flush(key)
+
+    kept_lines.sort(key=lambda item: item[0])
     return kept_lines, stream, untimed, unpid
 
 
@@ -168,8 +234,8 @@ def load_log(
         ev.tag = cands[0] if cands else None
         if len(cands) > 1:
             ev.extra["tag_candidates"] = cands
-        if ev.pid is not None and ev.pid in normalizer.pid_to_process:
-            ev.process = normalizer.pid_to_process[ev.pid]
+        if ev.pid is not None:
+            ev.process = normalizer.process_at(ev.pid, ev.ts_ms, ev.line_no)
         mod = normalizer.module_for_tag(ev.tag)
         if mod is None and ev.extra.get("app_frame"):
             mod = normalizer.module_for_package(ev.extra["app_frame"]["class"])
@@ -209,6 +275,7 @@ def load_log(
             "untimed_events": "excluded_when_time_range_set",
             "unpid_events": "excluded_when_pid_set",
             "process_map": "learned_from_full_stream_before_filter",
+            "process_identity": "resolved_at_event_time_for_pid_reuse",
             "memory": "filter_early_keeps_in_window_lines_and_touching_stacks" if filtered else "full_retain",
         },
         "untimed_excluded": untimed_excluded,

@@ -35,6 +35,36 @@ class TagNormalizer:
         self.package_to_module: dict[str, str] = data.get("package_to_module", {})
         self._pkg_keys = sorted(self.package_to_module, key=len, reverse=True)
         self.pid_to_process: dict[int, str] = {}
+        # Ordered Start-proc history for PID reuse: (ts_ms|None, line_no, pid, name)
+        self.pid_history: list[tuple[int | None, int, int, str]] = []
+
+    def record_start_proc(self, pid: int, name: str, ts_ms: int | None = None, line_no: int = 0) -> None:
+        self.pid_history.append((ts_ms, line_no, pid, name))
+        self.pid_to_process[pid] = name
+
+    def process_at(self, pid: int | None, ts_ms: int | None = None, line_no: int | None = None) -> str | None:
+        """Resolve process name as of the event time (PID reuse safe)."""
+        if pid is None:
+            return None
+        best: str | None = None
+        for h_ts, h_line, h_pid, h_name in self.pid_history:
+            if h_pid != pid:
+                continue
+            if ts_ms is not None and h_ts is not None:
+                if h_ts <= ts_ms:
+                    best = h_name
+                else:
+                    break
+            elif line_no is not None:
+                if h_line <= line_no:
+                    best = h_name
+                else:
+                    break
+            else:
+                best = h_name
+        if best is not None:
+            return best
+        return self.pid_to_process.get(pid)
 
     # -- tag ---------------------------------------------------------------
     def tag_candidates(self, raw_tag: str | None) -> list[str]:
@@ -81,13 +111,17 @@ class TagNormalizer:
         for ev in events:
             m = RX_START_PROC.search(ev.message)
             if m:
-                self.pid_to_process[int(m.group(1))] = m.group(2)
+                self.record_start_proc(int(m.group(1)), m.group(2), ev.ts_ms, ev.line_no)
                 continue
             m = RX_PROC_DIED.search(ev.message)
             if m:
-                self.pid_to_process.setdefault(int(m.group(2)), m.group(1))
+                pid = int(m.group(2))
+                name = m.group(1)
+                if pid not in self.pid_to_process:
+                    self.record_start_proc(pid, name, ev.ts_ms, ev.line_no)
             if ev.extra.get("process") and ev.pid is not None:
-                self.pid_to_process.setdefault(ev.pid, ev.extra["process"])
+                if ev.pid not in self.pid_to_process:
+                    self.record_start_proc(ev.pid, ev.extra["process"], ev.ts_ms, ev.line_no)
 
     # -- apply -------------------------------------------------------------
     def apply(self, events: list[LogEvent]) -> None:
@@ -97,8 +131,8 @@ class TagNormalizer:
             ev.tag = cands[0] if cands else None
             if len(cands) > 1:
                 ev.extra["tag_candidates"] = cands
-            if ev.pid is not None and ev.pid in self.pid_to_process:
-                ev.process = self.pid_to_process[ev.pid]
+            if ev.pid is not None:
+                ev.process = self.process_at(ev.pid, ev.ts_ms, ev.line_no)
             mod = self.module_for_tag(ev.tag)
             if mod is None and ev.extra.get("app_frame"):
                 mod = self.module_for_package(ev.extra["app_frame"]["class"])
